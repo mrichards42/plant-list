@@ -1,0 +1,27 @@
+<ion-view>
+    <ion-nav-title>TALL Plant List</ion-nav-title>
+    <ion-header-bar align-title="left" class="bar-subheader bar-clear item-input-inset">
+        <label class="item-input-wrapper">
+            <i class="icon ion-ios-search placeholder-icon"></i>
+            <input type="search" placeholder="Search" ng-model="searchText">
+            <button class="button ion-android-close button-dark button-clear" ng-show="searchText" on-tap="searchText=''"></button>
+        </label>
+    </ion-header-bar>
+    <ion-content>
+        <ion-list>
+            <ion-item collection-repeat="plant in plants | filter:searchText | orderBy:'scientific'"
+                    ui-sref="detail({code:plant.code})"
+                    ng-class="plant.idYear ? 'id-' + plant.idYear : ''">
+
+                <span class="col-code">{{ plant.code }}</span>
+                <span class="col-scientific">{{ plant.scientific }}</span>
+                <span class="col-growth">
+                    <span ng-repeat="form in plant.growth" ng-class="'growth-' + form.toLowerCase().split('/')[0]">
+                        {{form[0]}}
+                    </span>
+                </span>
+
+            </ion-item>
+        </ion-list>
+    </ion-content>
+</ion-view>

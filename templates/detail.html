@@ -1,0 +1,22 @@
+<ion-view>
+    <ion-nav-title>{{ plant.scientific }}</ion-nav-title>
+    <ion-content>
+        <h2>{{ plant.scientific }}</h2>
+        <h3>{{ plant.common }}</h3>
+        <div class="plant-detail">
+            <div class="row">
+                <div class="col">Code</div><div class="col">{{ plant.code }}</div>
+            </div>
+            <div class="row">
+                <div class="col">Family</div><div class="col">{{ plant.family }} ({{ plant.familyCommon }})</div>
+            </div>
+            <div class="row">
+                <div class="col">Growth Form</div><div class="col">{{ plant.growth.join(', ') }}</div>
+            </div>
+        </div>
+        <div class="plant-thumb">
+            <img src="{{ thumbnail }}">
+            <div class="thumb-caption">{{ caption }}</div>
+        </div>
+    </ion-content>
+</ion-view>

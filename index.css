@@ -1,0 +1,67 @@
+/* Columns */
+.col-code {
+    float: left;
+    width: 5em;
+    font-family: Consolas, monospace;
+}
+
+.col-scientific {
+    float: left;
+    font-style: italic;
+}
+
+.col-growth {
+    float: right;
+}
+
+/* Row highlight */
+.id-2014 .item-content {
+    background-color: lightgoldenrodyellow !important
+}
+
+.id-2015 .item-content {
+    background-color: lightgreen !important
+}
+
+/* Growth form */
+.col-growth span {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    text-align: center;
+    vertical-align: middle;
+    font-size: .9em;
+    font-weight: bold;
+    margin-left: 2px;
+    color: rgba(0,0,0,0.75);
+}
+
+.growth-graminoid {
+    background-color: tan;
+}
+
+.growth-fern {
+    background-color: lightblue;
+}
+
+.growth-forb {
+    background-color: yellowgreen;
+}
+
+.growth-shrub {
+    background-color: #a27fea;
+}
+
+.growth-tree {
+    background-color: lightskyblue;
+}
+
+.growth-vine {
+    background-color: darkorange;
+}
+
+
+/* Plant detail table */
+.plant-detail .col:first-child {
+    font-weight: bold;
+}

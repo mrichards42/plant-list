@@ -1,0 +1,7 @@
+{
+  "version":"1",
+  "flickr_api_key":"API_KEY_HERE",
+  "datafiles": [
+    "DEPENDENCIES_HERE"
+  ]
+}
