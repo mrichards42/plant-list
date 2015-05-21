@@ -1,3 +1,8 @@
+/* Adjust right padding on list items */
+.item-content {
+    padding: 16px !important;
+}
+
 /* Columns */
 .col-code {
     float: left;
@@ -16,11 +21,11 @@
 
 /* Row highlight */
 .id-2014 .item-content {
-    background-color: lightgoldenrodyellow !important
+    background-color: lightgoldenrodyellow !important;
 }
 
 .id-2015 .item-content {
-    background-color: lightgreen !important
+    background-color: lightgreen !important;
 }
 
 /* Growth form */
