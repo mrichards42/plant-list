@@ -1,8 +1,8 @@
 (function() {
     angular.module('PlantsApp')
-        .controller('DetailCtrl', DetailCtrl);
+        .controller('PlantDetailCtrl', PlantDetailCtrl);
 
-    function DetailCtrl($scope, $stateParams, plantList, flickr) {
+    function PlantDetailCtrl($scope, $stateParams, plantList, flickr) {
         var code = $stateParams.code;
         $scope.flickr = flickr;
         $scope.getPhotoUrl = flickr.getPhotoUrl;
