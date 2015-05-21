@@ -17,7 +17,7 @@
                 <span class="col-scientific">{{ plant.scientific }}</span>
                 <span class="col-growth">
                     <span ng-repeat="form in plant.growth" ng-class="'growth-' + form.toLowerCase().split('/')[0]">
-                        {{form[0]}}
+                        {{ form == "Fern" ? "Fn" : form[0] }}
                     </span>
                 </span>
 
