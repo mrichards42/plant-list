@@ -1,16 +1,14 @@
 (function () {
     angular.module('PlantsApp')
-        .factory('config', ConfigService);
+        .factory('config', ['storage', ConfigService]);
 
-    function ConfigService() {
+    function ConfigService(storage) {
         var self = {
-            _config: {},
             get: function (key) {
-                return self._config[key] || JSON.parse(localStorage.getItem('config-' + key));
+                return storage.get('config-' + key);
             },
             set: function (key, value) {
-                self._config[key] = value;
-                localStorage.setItem('config-' + key, JSON.stringify(value));
+                storage.set('config-' + key, value);
             },
             hasConfig: function () {
                 return self.get('version') != null;
