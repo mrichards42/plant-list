@@ -3,9 +3,11 @@
         .controller('PlantListCtrl', ['$scope', 'plantList', PlantListCtrl]);
 
     function PlantListCtrl($scope, plantList) {
-        plantList().success(function(data) {
-            $scope.plants = data;
-            console.log('PlantListCtrl done', data);
+        console.log(plantList);
+        $scope.plants = [];
+        plantList.getList().then(function(list) {
+            console.log('list', list);
+            $scope.plants = list;
         });
     }
 })();
