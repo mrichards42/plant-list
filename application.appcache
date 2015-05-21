@@ -1,0 +1,19 @@
+CACHE MANIFEST
+
+CACHE:
+# app
+index.html
+assets/js/app.min.js
+assets/css/index.css
+
+# data
+assets/json/plants.json
+manifest.json
+
+# ionic
+assets/libs/ionic/css/ionic.min.css
+assets/libs/ionic/js/ionic.bundle.min.js
+assets/libs/ionic/fonts/ionicons.ttf?v=2.0.1
+
+NETWORK:
+*

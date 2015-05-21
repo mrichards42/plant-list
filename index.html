@@ -1,10 +1,20 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="PlantsApp">
+<html lang="en" ng-app="PlantsApp" manifest="application.appcache">
 <head>
     <meta charset="UTF-8">
-    <title>Plants</title>
+    <title>Plant List</title>
 
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+
+    <!-- Android Web App -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- iOS Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="icon192.png">
 
     <!-- Ionic -->
     <link href="assets/libs/ionic/css/ionic.min.css" rel="stylesheet">
