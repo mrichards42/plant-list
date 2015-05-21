@@ -1,6 +1,6 @@
 (function() {
     angular.module('PlantsApp')
-        .controller('PlantDetailCtrl', PlantDetailCtrl);
+        .controller('PlantDetailCtrl', ['$scope', '$stateParams', 'plantList', 'flickr', PlantDetailCtrl]);
 
     function PlantDetailCtrl($scope, $stateParams, plantList, flickr) {
         var code = $stateParams.code;

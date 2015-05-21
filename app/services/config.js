@@ -1,6 +1,6 @@
 (function () {
     angular.module('PlantsApp')
-        .factory('config', ConfigService);
+        .factory('config', ['dropbox', ConfigService]);
 
     function ConfigService(dropbox) {
         var self = {

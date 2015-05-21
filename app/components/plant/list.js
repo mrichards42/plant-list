@@ -1,6 +1,6 @@
 (function() {
     angular.module('PlantsApp')
-        .controller('PlantListCtrl', PlantListCtrl);
+        .controller('PlantListCtrl', ['$scope', 'plantList', PlantListCtrl]);
 
     function PlantListCtrl($scope, plantList) {
         plantList().success(function(data) {

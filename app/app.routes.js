@@ -1,12 +1,12 @@
 (function() {
     angular.module('PlantsApp')
-        .config(function config($stateProvider, $urlRouterProvider) {
+        .config(['$stateProvider', '$urlRouterProvider', function config($stateProvider, $urlRouterProvider) {
             // oauth
-            $urlRouterProvider.when('/access_token=:accessToken', function ($location) {
+            $urlRouterProvider.when('/access_token=:accessToken', ['$location', function ($location) {
                 var hash = $location.path().substr(1);
                 console.log('when', $location.path());
                 return '/login/' + hash;
-            });
+            }]);
             // states
             $stateProvider.state('index', {
                 url: '/',
@@ -38,9 +38,9 @@
                 controller: 'PlantDetailCtrl',
                 templateUrl: 'app/components/plant/detail.html'
             });
-        })
+        }])
 
-        .controller('IndexCtrl', IndexCtrl);
+        .controller('IndexCtrl', ['$state', '$ionicHistory', 'dropbox', IndexCtrl]);
 
     // Empty controller that deals with logins
     function IndexCtrl($state, $ionicHistory, dropbox) {

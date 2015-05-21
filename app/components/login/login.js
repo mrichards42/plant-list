@@ -1,14 +1,14 @@
 (function () {
     angular.module('PlantsApp')
-        .controller('LoginCtrl', LoginCtrl)
-        .config(function config($stateProvider, $urlRouterProvider) {
+        .config(['$stateProvider', '$urlRouterProvider', function config($stateProvider, $urlRouterProvider) {
             // dropbox won't use hash urls
             $urlRouterProvider.when('/access_token=:accessToken', function ($location) {
                 var hash = $location.path().substr(1);
                 console.log('when', $location.path());
                 return '/login/' + hash;
             });
-        });
+        }])
+        .controller('LoginCtrl', ['$scope', '$stateParams', 'config', 'dropbox', LoginCtrl]);
 
     function LoginCtrl($scope, $stateParams, config, dropbox) {
         // Authenticate function (attached to login button)

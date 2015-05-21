@@ -1,6 +1,6 @@
 (function() {
     angular.module('PlantsApp')
-        .factory('plantList', plantListService);
+        .factory('plantList', ['$http', plantListService]);
 
     // TODO: create an api that uses promises
     // TODO: make this work with dropbox config files

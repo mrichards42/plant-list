@@ -1,6 +1,6 @@
 (function() {
     angular.module('PlantsApp')
-        .factory('flickr', PhotoService);
+        .factory('flickr', ['$http', 'config', PhotoService]);
 
     function PhotoService($http, config) {
         var self = {
