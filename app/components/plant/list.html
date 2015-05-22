@@ -8,18 +8,23 @@
         </label>
     </ion-header-bar>
     <ion-content>
-        <ion-list>
+        <ion-list class="plant-list">
             <ion-item collection-repeat="plant in plants | filter:searchText | orderBy:'scientific'"
-                    ui-sref="detail({code:plant.code})"
-                    ng-class="plant.idYear ? 'id-' + plant.idYear : ''">
+                      ui-sref="detail({code:plant.code})"
+                      ng-class="plant.idYear ? 'id-' + plant.idYear : ''">
 
-                <span class="col-code">{{ plant.code }}</span>
-                <span class="col-scientific">{{ plant.scientific }}</span>
-                <span class="col-growth">
-                    <span ng-repeat="form in plant.growth" ng-class="'growth-' + form.toLowerCase().split('/')[0]">
+                <div class="col-code">{{ plant.code }}</div>
+
+                <div class="col-name">
+                    <div class="scientific">{{ plant.scientific }}</div>
+                    <div class="common">{{ plant.common }}</div>
+                </div>
+
+                <div class="col-growth">
+                    <div ng-repeat="form in plant.growth" ng-class="'growth-' + form.toLowerCase().split('/')[0]">
                         {{ form == "Fern" ? "Fn" : form[0] }}
-                    </span>
-                </span>
+                    </div>
+                </div>
 
             </ion-item>
         </ion-list>

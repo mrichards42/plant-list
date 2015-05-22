@@ -1,22 +1,50 @@
 /* Adjust right padding on list items */
-.item-content {
-    padding: 16px !important;
+.list .item-content {
+    padding: 16px;
 }
 
-/* Columns */
+/* Plant list flexbox */
+.plant-list .item-content {
+    display: flex;
+    -webkit-align-items: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
 .col-code {
-    float: left;
-    width: 5em;
+    width: 4em;
     font-family: Consolas, monospace;
 }
 
-.col-scientific {
-    float: left;
+.col-name {
+    -webkit-flex: 1 1;
+    line-height: 1.3;
+}
+
+.col-name > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.col-name .scientific {
     font-style: italic;
 }
 
-.col-growth {
-    float: right;
+.col-name .common {
+    font-size: 0.7em;
+    color: gray;
+}
+
+.col-growth > div {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    text-align: center;
+    vertical-align: middle;
+    font-size: .8em;
+    font-weight: bold;
+    margin-left: 2px;
+    color: rgba(0,0,0,0.75);
 }
 
 /* Row highlight */
@@ -29,17 +57,6 @@
 }
 
 /* Growth form */
-.col-growth span {
-    display: inline-block;
-    width: 1.5em;
-    height: 1.5em;
-    text-align: center;
-    vertical-align: middle;
-    font-size: .8em;
-    font-weight: bold;
-    margin-left: 2px;
-    color: rgba(0,0,0,0.75);
-}
 
 .growth-graminoid {
     background-color: tan;
