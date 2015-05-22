@@ -1,11 +1,5 @@
 (function() {
     angular.module('PlantsApp')
-        .directive('plantMainMenu', function() {
-            return {
-                restrict: 'E',
-                templateUrl: 'app/menus/main.html'
-            }
-        })
         .controller('MainMenuCtrl', ['$scope', '$q', 'plantList', MainMenuCtrl]);
 
     function MainMenuCtrl($scope, $q, plantList) {
