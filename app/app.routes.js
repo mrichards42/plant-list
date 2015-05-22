@@ -4,9 +4,10 @@
             // states
             $urlRouterProvider.when('', '/list');
             $urlRouterProvider.when('/', '/list');
+            $urlRouterProvider.when('/list', '/list/');
 
             $stateProvider.state('list', {
-                url: '/list',
+                url: '/list/{name}',
                 controller: 'PlantListCtrl',
                 templateUrl: 'app/components/plant/list.html'
             });
