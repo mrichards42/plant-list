@@ -5,7 +5,9 @@
 
 /* Plant list flexbox */
 .plant-list .item-content {
-    display: flex;
+    display: -webkit-box;      /* iOS */
+    display: -webkit-flex;     /* Chrome */
+    display: flex;             /* spec */
     -webkit-align-items: center;
     padding-top: 10px;
     padding-bottom: 10px;
@@ -17,7 +19,9 @@
 }
 
 .col-name {
-    -webkit-flex: 1 1;
+    -webkit-box-flex: 1;    /* iOS */
+    -webkit-flex: 1;        /* Chrome */
+    flex: 1;                /* Spec */
     line-height: 1.3;
 }
 
