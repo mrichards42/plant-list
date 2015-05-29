@@ -14,7 +14,7 @@
         function load() {
             if (! loadPromise) {
                 console.log('Getting plants list');
-                loadPromise = $http.get('assets/json/plants.json').then(function(response) {
+                loadPromise = $http.get('assets/json/all_plants.json').then(function(response) {
                     plantList = response.data;
                     for(var i=0; i < plantList.length; ++i) {
                         var plant = plantList[i];
