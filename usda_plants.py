@@ -3,6 +3,10 @@
 import csv
 import urllib2
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 JSON_FILE = 'assets/json/all_plants.json'
 ALABAMA = "US01"
@@ -39,11 +43,12 @@ def make_plant(row, mapping):
         plant[newKey] = row[key]
     return plant
 
-def get_plants(state=None, counties=None):
+def get_plants(state=None, counties=None, codelist=False):
     """Get plants from USDA and return a list
     
     state is a FIPS code (e.g. US01)
     counties is a list of counties (e.g. ["AL:007", "AL:065"])
+    if codelist is True, just return a list of codes
     
     format:
     [
@@ -77,9 +82,9 @@ def get_plants(state=None, counties=None):
     elif counties:
         for county in counties:
             url = url + "&county=" + county
-    print "Downloading plants from\n%r\n..." % url
+    logger.info("Downloading plants from %r" % url)
     f = urllib2.urlopen(url)
-    print "Done."
+    logger.info("Done.")
 
     # Parse and combine synonyms
     # --------------------------
@@ -87,7 +92,7 @@ def get_plants(state=None, counties=None):
     plants_by_code = {}
     reader = csv.DictReader(f)
     nrows = 0
-    print "Parsing file",
+    logger.info("Parsing file")
     for row in reader:
         code = row['Accepted Symbol']
         synonym = row['Synonym Symbol']
@@ -99,32 +104,36 @@ def get_plants(state=None, counties=None):
         else:
             plant = make_plant(row, KEYS)
             plant['synonyms'] = []
-            # Replace "Forb/herb" with "Forb"
-            plant['growth'] = plant['growth'].replace('Forb/herb', 'Forb')
-            # Add "sp." to genera
-            if plant['scientific'] == plant['genus']:
-                plant['scientific'] += ' sp.'
+            # Replace growth habits
+            plant['growth'] = plant['growth'].replace('Forb/herb', 'Forb').replace('Subshrub', 'Shrub')
             # Split
             for key in SPLIT_KEYS:
-                plant[key] = [val for val in plant[key].split(', ') if val]
+                values = [val for val in plant[key].split(', ') if val]
+                # Remove duplicates
+                plant[key] = []
+                for v in values:
+                    if v not in plant[key]:
+                        plant[key].append(v)
             plants.append(plant)
             plants_by_code[code] = plant
         nrows += 1
-        if nrows % 500 == 0:
-            print ".",
-    print
-    print "Done: got %d plants and %d synonyms" % (len(plants), nrows - len(plants))
+    logger.info("Done: got %d plants and %d synonyms" % (len(plants), nrows - len(plants)))
 
     # Remove varieties and subspecies
     # -------------------------------
     filtered = [plant for plant in plants if len(plant['scientific'].split()) <= 2]
-    print "Removed %d varieties and subspecies" % (len(plants) - len(filtered))
+    logger.info("Removed %d varieties and subspecies" % (len(plants) - len(filtered)))
+    logger.info("Remaining plants: %d" % len(filtered))
 
-    return filtered
+    if codelist:
+        return [plant['code'] for plant in filtered]
+    else:
+        return filtered
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     #plants = get_plants(state=ALABAMA)
     plants = get_plants(counties=TALL_COUNTIES)
     with open(JSON_FILE, 'wb') as f:
         json.dump(plants, f)
-    print 'Wrote to %r' % JSON_FILE
+    logger.info('Wrote to %r' % JSON_FILE)
