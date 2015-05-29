@@ -4,6 +4,14 @@
 
     function PlantListCtrl($scope, $stateParams, plantList) {
         var listName = $stateParams.name;
+        $scope.genusSuffix = function(plant) {
+            if (plant.code.lastIndexOf("SPP") == plant.code.length - 3)
+                return " spp. (lump)";
+            else if (plant.scientific == plant.genus)
+                return " sp.";
+            else
+                return "";
+        };
         var promise;
         if (listName) {
             $scope.listName = listName;
