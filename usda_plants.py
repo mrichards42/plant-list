@@ -3,6 +3,10 @@
 import csv
 import urllib2
 import json
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 JSON_FILE = 'assets/json/all_plants.json'
 ALABAMA = "US01"
@@ -39,11 +43,15 @@ def make_plant(row, mapping):
         plant[newKey] = row[key]
     return plant
 
-def get_plants(state=None, counties=None):
+def is_var_or_ssp(scientific):
+    return ' var. ' in scientific or ' ssp. ' in scientific
+
+def get_plants(state=None, counties=None, codelist=False):
     """Get plants from USDA and return a list
     
     state is a FIPS code (e.g. US01)
     counties is a list of counties (e.g. ["AL:007", "AL:065"])
+    if codelist is True, just return a list of codes
     
     format:
     [
@@ -77,54 +85,69 @@ def get_plants(state=None, counties=None):
     elif counties:
         for county in counties:
             url = url + "&county=" + county
-    print "Downloading plants from\n%r\n..." % url
+    logger.info("Downloading plants from %r" % url)
     f = urllib2.urlopen(url)
-    print "Done."
+    logger.info("Done.")
 
     # Parse and combine synonyms
     # --------------------------
     plants = []
     plants_by_code = {}
+    plants_by_scientific = {}
     reader = csv.DictReader(f)
     nrows = 0
-    print "Parsing file",
+    logger.info("Parsing file")
+    variety_count = 0
+    variety_map = {} # variety code -> normal code
     for row in reader:
         code = row['Accepted Symbol']
         synonym = row['Synonym Symbol']
+        scientific = row['Scientific Name']
+        # Filter varieties
+        if is_var_or_ssp(scientific):
+            # Add to variety_map
+            if not synonym:
+                species = ' '.join(scientific.split()[:2])
+                variety_map[code] = plants_by_scientific[species]['code']
+            variety_count += 1
+            continue
         # Add synonym plants to existing plants
         if synonym:
             plant = make_plant(row, SYNONYM_KEYS)
-            plants_by_code[code]['synonyms'].append(plant)
+            accepted = plants_by_code.get(code)
+            if not accepted:
+                accepted = plants_by_code.get(variety_map[code])
+            accepted['synonyms'].append(plant)
         # Add plant
         else:
             plant = make_plant(row, KEYS)
             plant['synonyms'] = []
-            # Replace "Forb/herb" with "Forb"
-            plant['growth'] = plant['growth'].replace('Forb/herb', 'Forb')
-            # Add "sp." to genera
-            if plant['scientific'] == plant['genus']:
-                plant['scientific'] += ' sp.'
+            # Replace growth habits
+            plant['growth'] = plant['growth'].replace('Forb/herb', 'Forb').replace('Subshrub', 'Shrub')
             # Split
             for key in SPLIT_KEYS:
-                plant[key] = [val for val in plant[key].split(', ') if val]
+                values = [val for val in plant[key].split(', ') if val]
+                # Remove duplicates
+                plant[key] = []
+                for v in values:
+                    if v not in plant[key]:
+                        plant[key].append(v)
             plants.append(plant)
             plants_by_code[code] = plant
+            plants_by_scientific[scientific] = plant
         nrows += 1
-        if nrows % 500 == 0:
-            print ".",
-    print
-    print "Done: got %d plants and %d synonyms" % (len(plants), nrows - len(plants))
+    logger.info("Done: got %d plants and %d synonyms" % (len(plants), nrows - len(plants)))
+    logger.info("Removed %d varieties and subspecies" % variety_count)
 
-    # Remove varieties and subspecies
-    # -------------------------------
-    filtered = [plant for plant in plants if len(plant['scientific'].split()) <= 2]
-    print "Removed %d varieties and subspecies" % (len(plants) - len(filtered))
-
-    return filtered
+    if codelist:
+        return [plant['code'] for plant in plants]
+    else:
+        return plants
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     #plants = get_plants(state=ALABAMA)
     plants = get_plants(counties=TALL_COUNTIES)
     with open(JSON_FILE, 'wb') as f:
         json.dump(plants, f)
-    print 'Wrote to %r' % JSON_FILE
+    logger.info('Wrote to %r' % JSON_FILE)

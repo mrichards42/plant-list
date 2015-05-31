@@ -14,6 +14,7 @@
 }
 
 .col-code {
+    overflow: hidden;
     width: 4em;
     font-family: Consolas, monospace;
 }
@@ -28,10 +29,6 @@
 .col-name > div {
     overflow: hidden;
     text-overflow: ellipsis;
-}
-
-.col-name .scientific {
-    font-style: italic;
 }
 
 .col-name .common {
@@ -90,4 +87,9 @@
 /* Plant detail table */
 .plant-detail .col:first-child {
     font-weight: bold;
+}
+
+/* Text styles */
+.scientific {
+    font-style: italic;
 }

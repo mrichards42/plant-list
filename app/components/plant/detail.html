@@ -15,6 +15,11 @@
                 <div class="col">Growth Form</div><div class="col">{{ plant.growth.join(', ') }}</div>
             </div>
         </div>
+        <h3 ng-show="plant.synonyms.length > 0">Synonyms</h3>
+        <div class="row" ng-repeat="synonym in plant.synonyms">
+            <div class="col-25">{{ synonym.code }}</div>
+            <div class="col scientific">{{ synonym.scientific }}</div>
+        </div>
         <div class="plant-thumb">
             <img src="{{ thumbnail }}">
             <div class="thumb-caption">{{ caption }}</div>
