@@ -17,7 +17,7 @@
                     emit(doc.year + " " + doc.site + " Unknowns");
                 else if (doc.idYear)
                     emit(doc.idYear + " Plants");
-            }));
+            }, '_count'));
             return db;
         }
 
@@ -42,20 +42,37 @@
              * @returns {Promise} [{name: count}, ...]
              */
             getLists: function () {
-                return db.query('list_items', { reduce: '_count', group: true})
+                // Count all plants
+                return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
+                    console.log(result);
+                    var lists = [{name: self.ALL_PLANTS, count: result.rows.length}];
+                    // Count for each list
+                    return db.query('list_items', {group: true}).then(function(result) {
+                        return lists.concat(result.rows.map(function(row) { return {name:row.key, count:row.value} }));
+                    });
+                });
             },
 
             /**
              * Get plants from a stored plant list
              * @param {String} [name=ALL_PLANTS]
+             * @param [options={include_docs:true}]
              * @returns {Promise} array of plants
              */
-            getPlants: function(name) {
+            getPlants: function(name, options) {
+                options = options || {};
+                options.include_docs = options.include_docs === undefined ? true : options.include_docs;
                 var docs;
-                if (name === self.ALL_PLANTS || name === undefined)
-                    docs = db.allDocs({startKey: 'A', endKey: 'ZZZZ', include_docs: true});
-                else
-                    docs = db.query({key: 'list-' + name, include_docs: true});
+                if (name === self.ALL_PLANTS || name === undefined) {
+                    options.startkey = options.startkey === undefined ? 'A' : options.startkey;
+                    options.endkey = options.endkey === undefined ? 'ZZZZ' : options.endkey;
+                    docs = db.allDocs(options);
+                }
+                else {
+                    options.key = name;
+                    options.reduce = options.reduce === undefined ? false : options.reduce;
+                    docs = db.query('list_items', options);
+                }
                 return docs.then(function(result) {
                     return result.rows.map(function (row) { return row.doc; });
                 });
