@@ -1,4 +1,4 @@
-angular.module('PlantsApp', ['ionic', 'ui.router'])
+angular.module('PlantsApp', ['ionic', 'ui.router', 'pouchdb'])
     .directive('plantMainMenu', function() {
         return {
             restrict: 'E',
