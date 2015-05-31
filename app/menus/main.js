@@ -10,8 +10,8 @@
         }).then(function(result) {
             console.log(result);
             var plantLists = [{name: plantList.ALL_PLANTS, count: result.all.length}];
-            angular.forEach(result.lists, function(list, name) {
-                plantLists.push({name: name, count: list.length});
+            angular.forEach(result.lists, function(count, name) {
+                plantLists.push({name: name, count: count});
             });
             $scope.plantLists = plantLists;
         });

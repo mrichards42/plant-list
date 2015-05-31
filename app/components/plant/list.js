@@ -3,17 +3,9 @@
         .controller('PlantListCtrl', ['$scope', '$stateParams', 'plantList', PlantListCtrl]);
 
     function PlantListCtrl($scope, $stateParams, plantList) {
-        var listName = $stateParams.name;
-        var promise;
-        if (listName) {
-            $scope.listName = listName;
-            promise = plantList.getListPlants(listName);
-        }
-        else {
-            $scope.listName = plantList.ALL_PLANTS;
-            promise = plantList.getPlants();
-        }
-        promise.then(function (list) {
+        var listName = $stateParams.name || plantList.ALL_PLANTS;
+        $scope.listName = listName;
+        plantList.getPlants(listName).then(function (list) {
             console.log(list);
             $scope.plants = list;
         });
