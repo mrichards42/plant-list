@@ -94,6 +94,8 @@
              * @returns {string}
              */
             getListName: function(listId) {
+                if (listId == self.ALL_PLANTS)
+                    return listId;
                 // Cut "list:" off the front, or take the last part of the path
                 return listId.substr(Math.max(5, listId.lastIndexOf('/')+1));
             },
