@@ -1,6 +1,6 @@
 CACHE MANIFEST
 
-# version 0.5.5
+# version 0.5.6
 
 CACHE:
 # app
@@ -10,6 +10,7 @@ assets/css/index.css
 
 # data
 assets/json/all_plants.json
+assets/json/div_lists.json
 manifest.json
 
 # ionic
