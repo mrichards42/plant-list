@@ -151,7 +151,9 @@
                     options.startkey = options.startkey === undefined ? 'A' : options.startkey;
                     options.endkey = options.endkey === undefined ? 'ZZZZ' : options.endkey;
                     console.log('getPlants: allDocs', options);
-                    docs = db.allDocs(options);
+                    return db.allDocs(options).then(function(result) {
+                        return result.rows.map(function(row) { return row.doc; });
+                    })
                 }
                 else {
                     options.startkey = id;
