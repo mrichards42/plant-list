@@ -93,3 +93,9 @@
 .scientific {
     font-style: italic;
 }
+
+/* Hamburger Menu */
+.expand-collapse {
+    min-width: 16px;
+    display: inline-block;
+}
