@@ -105,6 +105,7 @@
              * @returns {Promise} [{id:list_id, name:name, count:count, path:[parents, of, list]}, ...]
              */
             getLists: withDB(function (db) {
+                console.log('getLists start', new Date());
                 // Count all plants
                 return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
                     var lists = [{
@@ -114,8 +115,10 @@
                         children: [],
                         count: result.rows.length
                     }];
+                    console.log('getLists got ALL_PLANTS', new Date());
                     // Add each list
                     return db.query('list_items', {group: true}).then(function(result) {
+                        console.log('getLists got list_items', new Date());
                         var listMap = {}; // id: list
                         function addList(id, count) {
                             // Split the last part of the path off
@@ -143,6 +146,7 @@
                             return list;
                         }
                         angular.forEach(result.rows, function(row) { addList(row.key, row.value) });
+                        console.log('getLists done', new Date());
                         return lists;
                     });
                 });
@@ -169,7 +173,7 @@
                 }
                 else {
                     options.startkey = id;
-                    options.endkey = id + '\uffff';
+                    options.endkey = id + '/\uffff';
                     options.reduce = options.reduce === undefined ? false : options.reduce;
                     console.log('getPlants: query', options);
                     docs = db.query('list_items', options);
