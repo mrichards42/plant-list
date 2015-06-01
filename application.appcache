@@ -18,5 +18,10 @@ assets/libs/ionic/css/ionic.min.css
 assets/libs/ionic/js/ionic.bundle.min.js
 assets/libs/ionic/fonts/ionicons.ttf?v=2.0.1
 
+# pouch
+assets/libs/pouchdb/pouchdb-3.5.0.min.js
+assets/libs/pouchdb/angular-pouchdb.min.js
+assets/libs/pouchdb/pouchdb.authentication.min.js
+
 NETWORK:
 *
