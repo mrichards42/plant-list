@@ -16,7 +16,7 @@
 .col-code {
     overflow: hidden;
     width: 4em;
-    font-family: Consolas, monospace;
+    font-family: Consolas, Menlo, monospace;
 }
 
 .col-name {
