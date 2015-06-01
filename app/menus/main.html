@@ -3,8 +3,8 @@
 </ion-header-bar>
 <ion-content has-header="true" ng-controller="MainMenuCtrl">
     <ion-list>
-        <ion-item ng-repeat="list in plantLists" ui-sref="list({name:list.name})" menu-close>
-            {{ list.name }} ({{ list.count }})
-        </ion-item>
+        <div ng-repeat="list in plantLists"
+             ng-include="'app/menus/list_item.html'">
+        </div>
     </ion-list>
 </ion-content>

@@ -1,0 +1,16 @@
+<ion-item ng-style="{'padding-left':(16 * (list.depth = 1 + (list.parent.depth || 0))) +  'px'}" >
+    <!-- Expand/Collapse button -->
+    <a ng-class="areChildrenShown(list) ? 'ion-arrow-down-b' : 'ion-arrow-right-b'"
+       ng-show="list.children.length > 0"
+       ng-click="toggleChildren(list)">
+    </a>
+    <!-- Text/link -->
+    <span ui-sref="list({id:list.id})" menu-close>
+        {{ list.name }} ({{ list.count }})
+    </span>
+</ion-item>
+<!-- Children (recursive) -->
+<div ng-show="areChildrenShown(list)">
+    <div ng-repeat="list in list.children" ng-include="'app/menus/list_item.html'">
+    </div>
+</div>

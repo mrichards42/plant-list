@@ -39,16 +39,49 @@
 
             /**
              * Get stored plant lists
-             * @returns {Promise} [{name: count}, ...]
+             * @returns {Promise} [{id:list_id, name:name, count:count, path:[parents, of, list]}, ...]
              */
             getLists: function () {
                 // Count all plants
                 return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
                     console.log(result);
-                    var lists = [{name: self.ALL_PLANTS, count: result.rows.length}];
-                    // Count for each list
+                    var lists = [{
+                        id: self.ALL_PLANTS,
+                        name: self.ALL_PLANTS,
+                        parent: null,
+                        children: [],
+                        count: result.rows.length
+                    }];
+                    // Add each list
                     return db.query('list_items', {group: true}).then(function(result) {
-                        return lists.concat(result.rows.map(function(row) { return {name:row.key, count:row.value} }));
+                        var listMap = {}; // id: list
+                        function addList(id, count) {
+                            // Split the last part of the path off
+                            var pathSplit = id.match(/(.*)\/([^\/]*)$/);
+                            var list = {
+                                id: id,
+                                name: pathSplit ? pathSplit[2] : id.substr(5), // remove 'list:'
+                                parent: pathSplit ? pathSplit[1] : null,
+                                children: [],
+                                count: count
+                            };
+                            listMap[list.id] = list;
+                            // Create hierarchy
+                            if (list.parent) {
+                                // Get or create parent
+                                var parent = listMap[list.parent] || addList(list.parent, 0);
+                                list.parent = parent;
+                                // Add this list's count up the hierarchy
+                                parent.count += count;
+                                parent.children.push(list);
+                            }
+                            // Add to the main Array of lists
+                            if (! list.parent)
+                                lists.push(list);
+                            return list;
+                        }
+                        angular.forEach(result.rows, function(row) { addList(row.key, row.value) });
+                        return lists;
                     });
                 });
             },

@@ -11,9 +11,9 @@
             else
                 return "";
         };
-        var listName = $stateParams.name || plantList.ALL_PLANTS;
-        $scope.listName = listName;
-        plantList.getPlants(listName).then(function (list) {
+        var listId = $stateParams.id || plantList.ALL_PLANTS;
+        $scope.listName = listId;
+        plantList.getPlants(listId).then(function (list) {
             console.log(list);
             $scope.plants = list;
         });

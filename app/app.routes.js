@@ -7,7 +7,7 @@
             $urlRouterProvider.when('/list', '/list/');
 
             $stateProvider.state('list', {
-                url: '/list/{name}',
+                url: '/list/{id}',
                 controller: 'PlantListCtrl',
                 templateUrl: 'app/components/plant/list.html'
             });
