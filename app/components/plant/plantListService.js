@@ -89,6 +89,16 @@
             }),
 
             /**
+             * Return a list name from an id
+             * @param listId
+             * @returns {string}
+             */
+            getListName: function(listId) {
+                // Cut "list:" off the front, or take the last part of the path
+                return listId.substr(Math.max(5, listId.lastIndexOf('/')+1));
+            },
+
+            /**
              * Get stored plant lists
              * @returns {Promise} [{id:list_id, name:name, count:count, path:[parents, of, list]}, ...]
              */
