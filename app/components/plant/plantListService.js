@@ -95,7 +95,6 @@
             getLists: withDB(function (db) {
                 // Count all plants
                 return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
-                    console.log(result);
                     var lists = [{
                         id: self.ALL_PLANTS,
                         name: self.ALL_PLANTS,
@@ -162,12 +161,13 @@
                     docs = db.query('list_items', options);
                 }
                 return docs.then(function(result) {
+                    console.log('getPlants: result', result);
                     var plants = [];
                     var idSet = {};
                     for (var i=0; i < result.rows.length; ++i) {
                         var row = result.rows[i];
                         var doc = row.doc;
-                        var id = row.value ? row.value._id : row.id;
+                        var id = row.value && row.value._id ? row.value._id : row.id;
                         // Remove duplicates
                         if (idSet[id])
                             continue;
