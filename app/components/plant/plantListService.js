@@ -1,8 +1,8 @@
 (function() {
     angular.module('PlantsApp')
-        .factory('plantList', ['pouchDB', plantListService]);
+        .factory('plantList', ['$http', 'pouchDB', plantListService]);
 
-    function plantListService(pouchDB) {
+    function plantListService($http, pouchDB) {
         var db = plantsDB();
         /**
          * Get and initialize the plants database
@@ -10,14 +10,42 @@
          */
         function plantsDB() {
             var db = pouchDB('plants');
-            db.putIfNotExists(db.createDesignDoc('list_items', function (doc) {
-                if (doc.type === 'list-plant')
-                    emit(doc.list_id, {_id: doc.plant_id});
-                else if (doc.type === "unknown")
-                    emit(doc.year + " " + doc.site + " Unknowns");
-                else if (doc.idYear)
-                    emit(doc.idYear + " Plants");
-            }, '_count'));
+            // Add list_items view design doc
+            db.upsertView('list_items',
+                function (doc) {
+                    if (doc.type === 'list-plant')
+                        emit(doc.list_id, {_id: doc.plant_id});
+                    else if (doc.type === "unknown")
+                        emit('list:' + doc.year + " " + doc.site + " Unknowns");
+                    else if (doc.idYear)
+                        emit('list:' + doc.idYear + " Plants");
+                },
+                '_count'
+            );
+            // Add plant data
+            db.get('VIRO3').catch(function (err) {
+                if (err.status !== 404)
+                    throw err;
+                $http.get('assets/json/all_plants.json').then(function (result) {
+                    return result.data.map(function(row) { row._id = row.code; return row; });
+                }).catch(function (err) {
+                    console.log('Error fetching all_plants.json', err);
+                }).then(function (rows) {
+                    console.log('plants', rows);
+                    return db.bulkDocs(rows);
+                });
+            });
+            // Add Diversity lists
+            db.get('list-plant:2014 TALL Diversity/TALL_001/Subplot 31/TALL_001 31.1.10:VIRO3').catch(function (err) {
+                if (err.status !== 404)
+                    throw err;
+                $http.get('assets/json/div_lists.json').then(function (result) {
+                    console.log('list-plants', result);
+                    return db.bulkDocs(result.data);
+                }).catch(function (err) {
+                    console.log('Error fetching div_lists.json', err);
+                });
+            });
             return db;
         }
 
