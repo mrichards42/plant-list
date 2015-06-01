@@ -1,52 +1,67 @@
 (function() {
     angular.module('PlantsApp')
-        .factory('plantList', ['$http', 'pouchDB', plantListService]);
+        .factory('plantList', ['$http', '$q', 'pouchDB', plantListService]);
 
-    function plantListService($http, pouchDB) {
-        var db = plantsDB();
+    function plantListService($http, $q, pouchDB) {
+        var dbPromise = plantsDB();
+        var dbIsLoading = true;
         /**
          * Get and initialize the plants database
          * @returns {PouchDB}
          */
         function plantsDB() {
             var db = pouchDB('plants');
-            // Add list_items view design doc
-            db.upsertView('list_items',
-                function (doc) {
-                    if (doc.type === 'list-plant')
-                        emit(doc.list_id, {_id: doc.plant_id});
-                    else if (doc.type === "unknown")
-                        emit('list:' + doc.year + " " + doc.site + " Unknowns");
-                    else if (doc.idYear)
-                        emit('list:' + doc.idYear + " Plants");
-                },
-                '_count'
-            );
-            // Add plant data
-            db.get('VIRO3').catch(function (err) {
-                if (err.status !== 404)
-                    throw err;
-                $http.get('assets/json/all_plants.json').then(function (result) {
-                    return result.data.map(function(row) { row._id = row.code; return row; });
-                }).catch(function (err) {
-                    console.log('Error fetching all_plants.json', err);
-                }).then(function (rows) {
-                    console.log('plants', rows);
-                    return db.bulkDocs(rows);
-                });
+            return $q.all([
+                // Add list_items view design doc
+                db.upsertView('list_items',
+                    function (doc) {
+                        if (doc.type === 'list-plant')
+                            emit(doc.list_id, {_id: doc.plant_id});
+                        else if (doc.type === "unknown")
+                            emit('list:' + doc.year + " " + doc.site + " Unknowns");
+                        else if (doc.idYear)
+                            emit('list:' + doc.idYear + " Plants");
+                    },
+                    '_count'
+                ),
+                // Add plant data
+                db.get('VIRO3').catch(function (err) {
+                    if (err.status !== 404)
+                        throw err;
+                    return $http.get('assets/json/all_plants.json').then(function (result) {
+                        return result.data.map(function(row) { row._id = row.code; return row; });
+                    }).catch(function (err) {
+                        console.log('Error fetching all_plants.json', err);
+                    }).then(function (rows) {
+                        console.log('plants', rows);
+                        return db.bulkDocs(rows);
+                    });
+                }),
+                // Add Diversity lists
+                db.get('list-plant:2014 TALL Diversity/TALL_001/Subplot 31/TALL_001 31.1.10:VIRO3').catch(function (err) {
+                    if (err.status !== 404)
+                        throw err;
+                    return $http.get('assets/json/div_lists.json').then(function (result) {
+                        console.log('list-plants', result);
+                        return db.bulkDocs(result.data);
+                    }).catch(function (err) {
+                        console.log('Error fetching div_lists.json', err);
+                    });
+                })
+            ]).then(function () {
+                dbIsLoading = false;
+                return db;
             });
-            // Add Diversity lists
-            db.get('list-plant:2014 TALL Diversity/TALL_001/Subplot 31/TALL_001 31.1.10:VIRO3').catch(function (err) {
-                if (err.status !== 404)
-                    throw err;
-                $http.get('assets/json/div_lists.json').then(function (result) {
-                    console.log('list-plants', result);
-                    return db.bulkDocs(result.data);
-                }).catch(function (err) {
-                    console.log('Error fetching div_lists.json', err);
+        }
+
+        // Decorator function that waits for the db to initialize
+        function withDB(func) {
+            return function() {
+                var originalArgs = Array.prototype.slice.call(arguments);
+                return dbPromise.then(function(db) {
+                    return func.apply(func, [db].concat(originalArgs));
                 });
-            });
-            return db;
+            }
         }
 
         var self = {
@@ -54,22 +69,30 @@
             ALL_PLANTS: 'All Plants',
 
             /**
+             * Is the database still loading?
+             * @returns {boolean}
+             */
+            isLoading: function() {
+                return dbIsLoading;
+            },
+
+            /**
              * Get a single plant by code
              * @param {String} code USDA code
              * @returns {Promise} plant
              */
-            getPlant: function(code) {
+            getPlant: withDB(function(db, code) {
                 return db.get(code).then(function(plant) {
                     plant.code = plant._id;
                     return plant;
                 });
-            },
+            }),
 
             /**
              * Get stored plant lists
              * @returns {Promise} [{id:list_id, name:name, count:count, path:[parents, of, list]}, ...]
              */
-            getLists: function () {
+            getLists: withDB(function (db) {
                 // Count all plants
                 return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
                     console.log(result);
@@ -112,7 +135,7 @@
                         return lists;
                     });
                 });
-            },
+            }),
 
             /**
              * Get plants from a stored plant list
@@ -120,7 +143,8 @@
              * @param [options={include_docs:true}]
              * @returns {Promise} array of plants
              */
-            getPlants: function(id, options) {
+            getPlants: withDB(function(db, id, options) {
+                console.log(arguments);
                 options = options || {};
                 options.include_docs = options.include_docs == undefined ? true : options.include_docs;
                 var docs;
@@ -141,8 +165,9 @@
                     var plants = [];
                     var idSet = {};
                     for (var i=0; i < result.rows.length; ++i) {
-                        var doc = result.rows[i].doc;
-                        var id = result.rows[i].value._id || result.rows[i].id;
+                        var row = result.rows[i];
+                        var doc = row.doc;
+                        var id = row.value ? row.value._id : row.id;
                         // Remove duplicates
                         if (idSet[id])
                             continue;
@@ -157,7 +182,7 @@
                     }
                     return plants;
                 });
-            }
+            })
         };
 
         return self;
