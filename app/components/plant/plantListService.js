@@ -117,27 +117,44 @@
                     }];
                     console.log('getLists got ALL_PLANTS', new Date());
                     // Add each list
-                    return db.query('list_items', {group: true}).then(function(result) {
+                    //return db.query('list_items', {group: true}).then(function(result) {
+                    return db.allDocs({startkey:'list-plant:', endkey:'list-plant:\uffff'}).then(function(result) {
                         console.log('getLists got list_items', new Date());
                         var listMap = {}; // id: list
-                        function addList(id, count) {
+                        function addListPlant(id) {
+                            var idSplit = id.split(':');
+                            var listId = idSplit[1];
+                            var plantId = idSplit[2];
+                            var list = listMap[listId] || addList(listId);
+                            // Add plant
+                            while (list) {
+                                if (! list.plantsMap[plantId]) {
+                                    list.plantsMap[plantId] = true;
+                                    list.plants.push(plantId);
+                                    ++list.count;
+                                }
+                                list = list.parent;
+                            }
+                        }
+                        function addList(id) {
                             // Split the last part of the path off
                             var pathSplit = id.match(/(.*)\/([^\/]*)$/);
                             var list = {
                                 id: id,
-                                name: pathSplit ? pathSplit[2] : id.substr(5), // remove 'list:'
+                                name: pathSplit ? pathSplit[2] : id,
                                 parent: pathSplit ? pathSplit[1] : null,
                                 children: [],
-                                count: count
+                                plants: [],
+                                plantsMap: {},
+                                count: 0
                             };
                             listMap[list.id] = list;
                             // Create hierarchy
                             if (list.parent) {
                                 // Get or create parent
-                                var parent = listMap[list.parent] || addList(list.parent, 0);
+                                var parent = listMap[list.parent] || addList(list.parent);
                                 list.parent = parent;
                                 // Add this list's count up the hierarchy
-                                parent.count += count;
                                 parent.children.push(list);
                             }
                             // Add to the main Array of lists
@@ -145,7 +162,7 @@
                                 lists.push(list);
                             return list;
                         }
-                        angular.forEach(result.rows, function(row) { addList(row.key, row.value) });
+                        angular.forEach(result.rows, function(row) { addListPlant(row.key) });
                         console.log('getLists done', new Date());
                         return lists;
                     });
