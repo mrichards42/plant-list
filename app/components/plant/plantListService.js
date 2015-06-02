@@ -12,18 +12,6 @@
         function plantsDB() {
             var db = pouchDB('plants');
             return $q.all([
-                // Add list_items view design doc
-                db.upsertView('list_items',
-                    function (doc) {
-                        if (doc.type === 'list-plant')
-                            emit(doc.list_id, {_id: doc.plant_id});
-                        else if (doc.type === "unknown")
-                            emit('list:' + doc.year + " " + doc.site + " Unknowns");
-                        else if (doc.idYear)
-                            emit('list:' + doc.idYear + " Plants");
-                    },
-                    '_count'
-                ),
                 // Add plant data
                 db.get('VIRO3').catch(function (err) {
                     if (err.status !== 404)
@@ -117,7 +105,6 @@
                     }];
                     console.log('getLists got ALL_PLANTS', new Date());
                     // Add each list
-                    //return db.query('list_items', {group: true}).then(function(result) {
                     return db.allDocs({startkey:'list-plant:', endkey:'list-plant:\uffff'}).then(function(result) {
                         console.log('getLists got list-plants', new Date());
                         var listMap = {}; // id: list
