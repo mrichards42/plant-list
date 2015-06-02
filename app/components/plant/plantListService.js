@@ -96,8 +96,8 @@
             getListName: function(listId) {
                 if (listId == self.ALL_PLANTS)
                     return listId;
-                // Cut "list:" off the front, or take the last part of the path
-                return listId.substr(Math.max(5, listId.lastIndexOf('/')+1));
+                // Take the last part of the path
+                return listId.substr(listId.lastIndexOf('/') + 1);
             },
 
             /**
@@ -119,7 +119,7 @@
                     // Add each list
                     //return db.query('list_items', {group: true}).then(function(result) {
                     return db.allDocs({startkey:'list-plant:', endkey:'list-plant:\uffff'}).then(function(result) {
-                        console.log('getLists got list_items', new Date());
+                        console.log('getLists got list-plants', new Date());
                         var listMap = {}; // id: list
                         function addListPlant(id) {
                             var idSplit = id.split(':');
@@ -172,50 +172,55 @@
             /**
              * Get plants from a stored plant list
              * @param {String} [id=ALL_PLANTS]
-             * @param [options={include_docs:true}]
              * @returns {Promise} array of plants
              */
-            getPlants: withDB(function(db, id, options) {
-                console.log(arguments);
-                options = options || {};
-                options.include_docs = options.include_docs == undefined ? true : options.include_docs;
-                var docs;
+            getPlants: withDB(function(db, id) {
+                var options;
                 if (id == self.ALL_PLANTS || id === undefined) {
-                    options.startkey = options.startkey === undefined ? 'A' : options.startkey;
-                    options.endkey = options.endkey === undefined ? 'ZZZZ' : options.endkey;
+                    options = {
+                        startkey: 'A',
+                        endkey: 'Z\uffff',
+                        include_docs: true
+                    };
                     console.log('getPlants: allDocs', options);
                     return db.allDocs(options).then(function(result) {
+                        console.log('getPlants: result', result);
                         return result.rows.map(function(row) { return row.doc; });
                     })
                 }
-                else {
-                    options.startkey = id;
-                    options.endkey = id + '/\uffff';
-                    options.reduce = options.reduce === undefined ? false : options.reduce;
-                    console.log('getPlants: query', options);
-                    docs = db.query('list_items', options);
-                }
-                return docs.then(function(result) {
-                    console.log('getPlants: result', result);
-                    var plants = [];
-                    var idSet = {};
-                    for (var i=0; i < result.rows.length; ++i) {
-                        var row = result.rows[i];
-                        var doc = row.doc;
-                        var id = row.value && row.value._id ? row.value._id : row.id;
-                        // Remove duplicates
-                        if (idSet[id])
-                            continue;
-                        idSet[id] = true;
-                        if (doc) {
-                            plants.push(doc);
+                options = {
+                    startkey: 'list-plant:' + id + '/',
+                    endkey: 'list-plant:' + id + '/\uffff'
+                };
+                console.log('getPlants: allDocs', options);
+                return db.allDocs(options).then(function(pathResult) {
+                    options = {
+                        startkey: 'list-plant:' + id + ':',
+                        endkey: 'list-plant:' + id + ':\uffff'
+                    };
+                    console.log('getPlants: allDocs', options);
+                    return db.allDocs(options).then(function (keyResult) {
+                        return pathResult.rows.concat(keyResult.rows);
+                    });
+                }).then(function(rows) {
+                    var plantIds = [];
+                    var idMap = {};
+                    angular.forEach(rows, function(row) {
+                        var idSplit = row.key.split(':');
+                        var plantId = idSplit[2];
+                        if (! idMap[plantId]) {
+                            // Remove duplicates
+                            idMap[plantId] = true;
+                            plantIds.push(plantId);
                         }
-                        else if (id != '2PLANT') {
-                            plants.push({_id: id, code:id, scientific:id});
-                            console.log('no plant', result.rows[i]);
-                        }
-                    }
-                    return plants;
+                    });
+                    // Fetch docs for plant ids
+                    return db.allDocs({keys:plantIds, include_docs:true}).then(function(result) {
+                        console.log('getPlants: result', result);
+                        return result.rows.map(function(row) {
+                            return row.doc || {code:row.key, scientific:row.key, common:'unknown'};
+                        });
+                    })
                 });
             })
         };
