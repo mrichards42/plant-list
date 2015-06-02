@@ -56,6 +56,9 @@
             // List name for all plants
             ALL_PLANTS: 'All Plants',
 
+            // listId: list
+            listMap: {},
+
             /**
              * Is the database still loading?
              * @returns {boolean}
@@ -107,12 +110,12 @@
                     // Add each list
                     return db.allDocs({startkey:'list-plant:', endkey:'list-plant:\uffff'}).then(function(result) {
                         console.log('getLists got list-plants', new Date());
-                        var listMap = {}; // id: list
+                        self.listMap = {}; // id: list (
                         function addListPlant(id) {
                             var idSplit = id.split(':');
                             var listId = idSplit[1];
                             var plantId = idSplit[2];
-                            var list = listMap[listId] || addList(listId);
+                            var list = self.listMap[listId] || addList(listId);
                             // Add plant
                             while (list) {
                                 if (! list.plantsMap[plantId]) {
@@ -135,11 +138,11 @@
                                 plantsMap: {},
                                 count: 0
                             };
-                            listMap[list.id] = list;
+                            self.listMap[list.id] = list;
                             // Create hierarchy
                             if (list.parent) {
                                 // Get or create parent
-                                var parent = listMap[list.parent] || addList(list.parent);
+                                var parent = self.listMap[list.parent] || addList(list.parent);
                                 list.parent = parent;
                                 // Add this list's count up the hierarchy
                                 parent.children.push(list);
@@ -163,6 +166,12 @@
              */
             getPlants: withDB(function(db, id) {
                 var options;
+                function getDocs(rows) {
+                    return rows.map(function(row) {
+                        return row.doc || {code: row.key, scientific: row.key, common: 'unknown'};
+                    });
+                }
+                // All plants
                 if (id == self.ALL_PLANTS || id === undefined) {
                     options = {
                         startkey: 'A',
@@ -172,9 +181,17 @@
                     console.log('getPlants: allDocs', options);
                     return db.allDocs(options).then(function(result) {
                         console.log('getPlants: result', result);
-                        return result.rows.map(function(row) { return row.doc; });
+                        return getDocs(result.rows);
                     })
                 }
+                // Shortcut if we've called getLists() already
+                else if (self.listMap[id]) {
+                    return db.allDocs({keys:self.listMap[id].plants, include_docs:true}).then(function(result) {
+                        console.log('getPlants: from computed list', result);
+                        return getDocs(result.rows);
+                    });
+                }
+                // Otherwise assemble the list from list-plant docs
                 options = {
                     startkey: 'list-plant:' + id + '/',
                     endkey: 'list-plant:' + id + '/\uffff'
@@ -204,9 +221,7 @@
                     // Fetch docs for plant ids
                     return db.allDocs({keys:plantIds, include_docs:true}).then(function(result) {
                         console.log('getPlants: result', result);
-                        return result.rows.map(function(row) {
-                            return row.doc || {code:row.key, scientific:row.key, common:'unknown'};
-                        });
+                        return getDocs(result.rows);
                     })
                 });
             })
