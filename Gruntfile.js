@@ -2,6 +2,19 @@ module.exports = function(grunt) {
 
     // Project configuration.
     grunt.initConfig({
+        // Add manifest to
+        'string-replace': {
+            PlantsApp: {
+                src:      'index_nocache.html',
+                dest:     'index.html',
+                options: {
+                    replacements: [{
+                        pattern: '<html',
+                        replacement: '<html manifest="application.appcache"'
+                    }]
+                }
+            }
+        },
         // Bundle template html into a js file
         ngtemplates : {
             PlantsApp: {
@@ -45,9 +58,10 @@ module.exports = function(grunt) {
     });
 
     // Load plugins
+    grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-angular-templates');
 
     // Default task(s).
-    grunt.registerTask('default', ['ngtemplates', 'uglify']);
+    grunt.registerTask('default', ['string-replace', 'ngtemplates', 'uglify']);
 };
