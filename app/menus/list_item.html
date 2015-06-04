@@ -1,9 +1,11 @@
-<ion-item ng-style="{'padding-left':(16 * (list.depth = 1 + (list.parent.depth || 0))) +  'px'}" >
+<ion-item>
     <!-- Expand/Collapse button -->
-    <a class="expand-collapse"
-       ng-class="areChildrenShown(list) ? 'ion-arrow-down-b' : 'ion-arrow-right-b'"
-       ng-show="list.children.length > 0"
+    <a ng-style="{'padding-left':(16 * (list.depth = 1 + (list.parent.depth || 0))) +  'px'}"
        ng-click="toggleChildren(list)">
+        <i class="expand-collapse"
+           ng-class="areChildrenShown(list) ? 'ion-arrow-down-b' : 'ion-arrow-right-b'"
+           ng-show="list.children.length > 0">
+        </i>
     </a>
     <!-- Text/link -->
     <span ui-sref="list({id:list.id})" menu-close>

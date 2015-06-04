@@ -96,6 +96,7 @@
 
 /* Hamburger Menu */
 .expand-collapse {
-    min-width: 16px;
+    font-size: 1.2em;
+    min-width: 18px;
     display: inline-block;
 }
