@@ -9,7 +9,7 @@
     </ion-header-bar>
     <ion-content>
         <ion-list class="plant-list">
-            <ion-item collection-repeat="plant in plants | filter:searchText | orderBy:'scientific'"
+            <ion-item collection-repeat="plant in plants | filter:plantFilter(searchText) | orderBy:'scientific'"
                       ui-sref="detail({code:plant.code})"
                       ng-class="plant.idYear ? 'id-' + plant.idYear : ''">
 

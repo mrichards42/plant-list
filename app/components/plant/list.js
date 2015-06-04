@@ -15,6 +15,28 @@
             else
                 return "";
         };
+
+        // Custom filter function:
+        // Matches query against code, scientific, common, and synonyms
+        $scope.plantFilter = function(query) {
+            if (! query)
+                return function() { return true; };
+            query = query.toLowerCase();
+            return function(plant) {
+                function matches(val) {
+                    return val && val.toLowerCase().indexOf(query) !== -1;
+                }
+                if (matches(plant.code) || matches(plant.scientific) || matches(plant.common))
+                    return true;
+                if (plant.synonyms) {
+                    return plant.synonyms.some(function(syn) {
+                        return matches(syn.code) || matches(syn.scientific);
+                    });
+                }
+                return false;
+            }
+        };
+
         var listId = $stateParams.id || plantList.ALL_PLANTS;
         $scope.listName = plantList.getListName(listId);
         plantList.getPlants(listId).then(function (list) {
