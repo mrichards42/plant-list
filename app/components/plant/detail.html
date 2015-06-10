@@ -4,7 +4,8 @@
         <div ng-show="unknown">
             <h2>{{ unknown.name }}</h2>
             <div class="row">
-                <div class="col-33">Code</div><div class="col">{{ unknown.code }}</div>
+                <div class="col-33">Code</div>
+                <div class="col">{{ unknown.code }}{{ unknown.idCode ? ' (' + unknown.idCode + ')': ''}}</div>
             </div>
             <div class="row">
                 <div class="col-33">Collected</div>

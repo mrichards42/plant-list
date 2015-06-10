@@ -109,7 +109,9 @@
                         if (! plant.idCode)
                             return plant;
                         // Fetch identified plant (if this is an ID'd unknown)
-                        return db.get(plant.idCode).then(function (result) {
+                        return db.get(plant.idCode).catch(function() {
+                            return;
+                        }).then(function (result) {
                             plant.idPlant = result;
                             return plant;
                         });
