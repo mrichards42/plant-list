@@ -35,6 +35,17 @@
                     }).catch(function (err) {
                         console.log('Error fetching div_lists.json', err);
                     });
+                }),
+                // Add Unknowns
+                db.get('unk:2015:TALL:001').catch(function (err) {
+                    if (err.status !== 404)
+                        throw err;
+                    return $http.get('assets/json/TALL_unknowns.json').then(function (result) {
+                        console.log('unknowns', result);
+                        return db.bulkDocs(result.data);
+                    }).catch(function (err) {
+                        console.log('Error fetching TALL_unknowns.json', err);
+                    });
                 })
             ]).then(function () {
                 dbIsLoading = false;
@@ -68,14 +79,41 @@
             },
 
             /**
+             * Is this plant (or list) an unknown?
+             * @returns {boolean}
+             */
+            isUnknown: function(plant) {
+                return (typeof plant === 'object' ? plant._id : plant).substr(0, 3)  == 'unk';
+            },
+
+            /**
              * Get a single plant by code
              * @param {String} code USDA code
              * @returns {Promise} plant
              */
             getPlant: withDB(function(db, code) {
                 return db.get(code).then(function(plant) {
-                    plant.code = plant._id;
-                    return plant;
+                    if (! self.isUnknown(plant))
+                        return plant;
+                    // Fetch unknown synonyms
+                    return db.allDocs({keys: plant.synonyms || [], include_docs:true}).then(function(result) {
+                        angular.forEach(result.rows, function(row, i) {
+                            if (row.doc) {
+                                plant.synonyms[i] = row.doc;
+                                if (! plant.idCode && row.doc.idCode)
+                                    plant.idCode = row.doc.idCode;
+                            }
+                        });
+                        return plant;
+                    }).then(function(plant) {
+                        if (! plant.idCode)
+                            return plant;
+                        // Fetch identified plant (if this is an ID'd unknown)
+                        return db.get(plant.idCode).then(function (result) {
+                            plant.idPlant = result;
+                            return plant;
+                        });
+                    });
                 });
             }),
 
@@ -97,16 +135,17 @@
              */
             getLists: withDB(function (db) {
                 console.log('getLists start', new Date());
-                // Count all plants
+                // All plants
                 return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
-                    var lists = [{
+                    console.log('getLists got ALL_PLANTS', new Date());
+                    return [{
                         id: self.ALL_PLANTS,
                         name: self.ALL_PLANTS,
                         parent: null,
                         children: [],
                         count: result.rows.length
                     }];
-                    console.log('getLists got ALL_PLANTS', new Date());
+                }).then(function(lists) {
                     // Add each list
                     return db.allDocs({startkey:'list-plant:', endkey:'list-plant:\uffff'}).then(function(result) {
                         console.log('getLists got list-plants', new Date());
@@ -153,7 +192,38 @@
                             return list;
                         }
                         angular.forEach(result.rows, function(row) { addListPlant(row.key) });
-                        console.log('getLists done', new Date());
+                        console.log('getLists list-plants done', new Date());
+                        return lists;
+                    });
+                }).then(function(lists) {
+                    // Unknowns
+                    return db.allDocs({startkey:'unk:', endkey:'unk:\uffff'}).then(function(result) {
+                        console.log('getLists got unknowns', new Date());
+                        function addUnknown(id) {
+                            var unk = id.split(':');
+                            var year = unk[1];
+                            var site = unk[2];
+                            // Add list
+                            var listName = 'Unknowns' + ' ' + year + ' ' + site;
+                            var listId = 'unk:' + year + ':' + site;
+                            var list = self.listMap[listId] || {
+                                id: listId,
+                                name: listName,
+                                parent: null,
+                                children: [],
+                                plants: [],
+                                count: 0
+                            };
+                            if (! self.listMap[list.id]) {
+                                self.listMap[list.id] = list;
+                                lists.push(list);
+                            }
+                            // Add plant to list
+                            list.count += 1;
+                            list.plants.push(id);
+                        }
+                        angular.forEach(result.rows, function(row) { addUnknown(row.key) });
+                        console.log('getLists unknowns done', new Date());
                         return lists;
                     });
                 });
@@ -192,15 +262,17 @@
                     });
                 }
                 // Otherwise assemble the list from list-plant docs
+                if (! self.isUnknown(id))
+                    id = 'list-plant:' + id;
                 options = {
-                    startkey: 'list-plant:' + id + '/',
-                    endkey: 'list-plant:' + id + '/\uffff'
+                    startkey: id + '/',
+                    endkey: id + '/\uffff'
                 };
                 console.log('getPlants: allDocs', options);
                 return db.allDocs(options).then(function(pathResult) {
                     options = {
-                        startkey: 'list-plant:' + id + ':',
-                        endkey: 'list-plant:' + id + ':\uffff'
+                        startkey: id + ':',
+                        endkey: id + ':\uffff'
                     };
                     console.log('getPlants: allDocs', options);
                     return db.allDocs(options).then(function (keyResult) {
@@ -212,6 +284,8 @@
                     angular.forEach(rows, function(row) {
                         var idSplit = row.key.split(':');
                         var plantId = idSplit[2];
+                        if (self.isUnknown(row.key))
+                            plantId = idSplit.join(':');
                         if (! idMap[plantId]) {
                             // Remove duplicates
                             idMap[plantId] = true;

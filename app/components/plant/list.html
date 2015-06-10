@@ -9,15 +9,22 @@
     </ion-header-bar>
     <ion-content>
         <ion-list class="plant-list">
-            <ion-item collection-repeat="plant in plants | filter:plantFilter(searchText) | orderBy:'scientific'"
-                      ui-sref="detail({code:plant.code})"
-                      ng-class="plant.idYear ? 'id-' + plant.idYear : ''">
+            <ion-item collection-repeat="plant in plants | filter:plantFilter(searchText) | orderBy:'scientific || code'"
+                      ui-sref="detail({id:plant._id})"
+                      ng-class="(plant.idYear || plant.idCode) ? 'id-' + (plant.idYear || 2015) : ''">
 
-                <div class="col-code">{{ plant.code }}</div>
+                <div class="col-code">
+                    <div>{{ plant.code }}</div>
+                    <div>{{ plant.idCode }}</div>
+                </div>
 
                 <div class="col-name">
-                    <div class="scientific">{{ plant.scientific }}{{ genusSuffix(plant) }}</div>
-                    <div class="common">{{ plant.common }}</div>
+                    <div ng-class="plant.scientific ? 'scientific' : 'common'">
+                        {{ plant.scientific || plant.name }}{{ genusSuffix(plant) }}
+                    </div>
+                    <div ng-class="plant.scientific ? 'common' : 'scientific'">
+                        {{ plant.common || plant.idScientific }}
+                    </div>
                 </div>
 
                 <div class="col-growth">

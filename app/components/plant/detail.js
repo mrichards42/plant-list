@@ -3,10 +3,16 @@
         .controller('PlantDetailCtrl', ['$scope', '$stateParams', 'plantList', 'flickr', PlantDetailCtrl]);
 
     function PlantDetailCtrl($scope, $stateParams, plantList, flickr) {
-        var code = $stateParams.code;
+        var plantId = $stateParams.id;
         $scope.getPhotoUrl = flickr.getPhotoUrl;
-        plantList.getPlant(code).then(function(plant) {
-            $scope.plant = plant;
+        plantList.getPlant(plantId).then(function(plant) {
+            console.log(plant);
+            if (plantList.isUnknown(plant)) {
+                $scope.unknown = plant;
+                $scope.plant = plant.idPlant;
+            }
+            else
+                $scope.plant = plant;
             // Look for photos
             flickr.query(plant.scientific, function (data) {
                 console.log('photo queried', data);

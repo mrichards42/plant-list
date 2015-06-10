@@ -31,7 +31,8 @@
     text-overflow: ellipsis;
 }
 
-.col-name .common {
+.col-code :last-child,
+.col-name :last-child {
     font-size: 0.7em;
     color: gray;
 }
@@ -54,7 +55,7 @@
 }
 
 .id-2015 .item-content {
-    background-color: lightgreen !important;
+    background-color: #b1f4b3 !important;
 }
 
 /* Growth form */

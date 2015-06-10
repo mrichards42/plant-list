@@ -13,7 +13,7 @@
             });
 
             $stateProvider.state('detail', {
-                url: '/detail/{code}',
+                url: '/detail/{id}',
                 controller: 'PlantDetailCtrl',
                 templateUrl: 'app/components/plant/detail.html'
             });
