@@ -41,6 +41,7 @@ def make_plant(row, mapping):
     plant = {}
     for key, newKey in mapping.iteritems():
         plant[newKey] = row[key]
+    plant['_id'] = plant['code']
     return plant
 
 def is_var_or_ssp(scientific):

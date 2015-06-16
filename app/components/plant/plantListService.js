@@ -16,13 +16,11 @@
                 db.get('VIRO3').catch(function (err) {
                     if (err.status !== 404)
                         throw err;
-                    return $http.get('assets/json/all_plants.json').then(function (result) {
-                        return result.data.map(function(row) { row._id = row.code; return row; });
-                    }).catch(function (err) {
-                        console.log('Error fetching all_plants.json', err);
-                    }).then(function (rows) {
+                    return $http.get('assets/json/all_plants.json').then(function (rows) {
                         console.log('plants', rows);
                         return db.bulkDocs(rows);
+                    }).catch(function (err) {
+                        console.log('Error fetching all_plants.json', err)
                     });
                 }),
                 // Add Diversity lists
