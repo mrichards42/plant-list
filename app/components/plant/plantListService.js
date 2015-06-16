@@ -11,40 +11,56 @@
          */
         function plantsDB() {
             var db = pouchDB('plants');
+
+            /**
+             * Add or update plants data if any
+             * @param checkId   If db.get(checkId) fails, add or update data
+             * @param startkey  startkey for updating existing documents
+             * @param endkey    endkey for updating existing documents
+             * @param jsonFile  JSON file with data (Array of Objects with _id)
+             * @returns {Promise}
+             */
+            function loadData(checkId, startkey, endkey, jsonFile) {
+                return db.get(checkId).catch(function(err) {
+                    if (err.status !== 404)
+                        throw err;
+                    console.log('updating db with ' + jsonFile);
+                    return $http.get(jsonFile).then(function (result) {
+                        return db.allDocs({startkey:startkey, endkey:endkey}).then(function(allDocs) {
+                            // Map id to rev
+                            var existing = {};
+                            angular.forEach(allDocs.rows, function(row) {
+                                existing[row.id] = row.value.rev;
+                            });
+                            // Add _rev to each json doc
+                            angular.forEach(result.data, function(row) {
+                                var rev = existing[row._id];
+                                if (rev)
+                                    row._rev = rev;
+                            });
+                            return db.bulkDocs(result.data);
+                        })
+                    }).catch(function (err) {
+                        console.log('Error fetching ' + jsonFile, err);
+                    });
+                });
+            }
+
             return $q.all([
-                // Add plant data
-                db.get('VIRO3').catch(function (err) {
-                    if (err.status !== 404)
-                        throw err;
-                    return $http.get('assets/json/all_plants.json').then(function (rows) {
-                        console.log('plants', rows);
-                        return db.bulkDocs(rows);
-                    }).catch(function (err) {
-                        console.log('Error fetching all_plants.json', err)
-                    });
-                }),
-                // Add Diversity lists
-                db.get('list-plant:2014 TALL Diversity/TALL_001/Subplot 31/TALL_001 31.1.10:VIRO3').catch(function (err) {
-                    if (err.status !== 404)
-                        throw err;
-                    return $http.get('assets/json/div_lists.json').then(function (result) {
-                        console.log('list-plants', result);
-                        return db.bulkDocs(result.data);
-                    }).catch(function (err) {
-                        console.log('Error fetching div_lists.json', err);
-                    });
-                }),
-                // Add Unknowns
-                db.get('unk:2015:TALL:001').catch(function (err) {
-                    if (err.status !== 404)
-                        throw err;
-                    return $http.get('assets/json/TALL_unknowns.json').then(function (result) {
-                        console.log('unknowns', result);
-                        return db.bulkDocs(result.data);
-                    }).catch(function (err) {
-                        console.log('Error fetching TALL_unknowns.json', err);
-                    });
-                })
+                // Plants
+                loadData('VIRO3', 'A', 'ZZZZ', 'assets/json/all_plants.json'),
+                // Diversity lists
+                loadData(
+                    'list-plant:2014 TALL Diversity/TALL_001/Subplot 31/TALL_001 31.1.10:VIRO3',
+                    'list-plant:2014 TALL Diversity',
+                    'list-plant:2014 TALL Diversity\uffff',
+                    'assets/json/div_lists.json'),
+                // Unknowns
+                loadData(
+                    'unk:2015:TALL:358',
+                    'unk:2015:TALL:',
+                    'unk:2015:TALL:\uffff',
+                    'assets/json/TALL_unknowns.json'),
             ]).then(function () {
                 dbIsLoading = false;
                 return db;
