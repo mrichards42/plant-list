@@ -4,11 +4,13 @@
 
     function ConfigCtrl($scope, $ionicPopup, config) {
         var cfg = config.load();
-        var remoteDb = new PouchDB("https://" + cfg.username + ".cloudant.com/plants", {skipSetup: true});
+        function remoteDb() {
+            return new PouchDB("https://" + cfg.username + ".cloudant.com/plants", {skipSetup: true});
+        }
         $scope.config = cfg;
         $scope.login = function() {
             // Open db and try to login
-            remoteDb.login(cfg.username, cfg.password).then(function(result) {
+            remoteDb().login(cfg.username, cfg.password).then(function(result) {
                 cfg.isLoggedIn = true;
                 console.log(result);
                 cfg.save();
@@ -25,7 +27,7 @@
             cfg.password = "";
             if (! cfg.saveUsername)
                 cfg.username = "";
-            remoteDb.logout().then(console.log.bind(console));
+            remoteDb().logout().then(console.log.bind(console));
             cfg.isLoggedIn = false;
             cfg.save();
         };
