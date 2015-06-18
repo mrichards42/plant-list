@@ -63,4 +63,26 @@
             });
         }
     });
+
+    // pouch-authorization Cloudant fix
+    // Add x-www-form-urlencoded and a urlencoded body for Cloudant databases
+    var pouchLogin = PouchDB.prototype.login;
+    PouchDB.plugin({
+        'login': function (username, password, opts, callback) {
+            opts = opts || {};
+            if (this.getUrl().match(/\.cloudant\.com/)) {
+                opts.ajax = angular.extend({
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'name=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password)
+                }, opts.ajax || {});
+            }
+            // Assemble args and call function
+            // NB: the original function checks arguments.length to decide if there
+            // is a callback, so we can't just include null callback as an arg.
+            var args = [username, password, opts];
+            if (callback)
+                args.push(callback);
+            return pouchLogin.apply(this, args);
+        }
+    });
 })();
