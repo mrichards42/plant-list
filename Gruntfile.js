@@ -2,15 +2,23 @@ module.exports = function(grunt) {
 
     // Project configuration.
     grunt.initConfig({
-        // Add manifest to
         'string-replace': {
             PlantsApp: {
                 src:      'index_nocache.html',
                 dest:     'index.html',
                 options: {
+                    // Add manifest
                     replacements: [{
                         pattern: '<html',
                         replacement: '<html manifest="application.appcache"'
+                    },
+                    // Replace js with min.js
+                    {
+                        pattern:/\.js"/gi,
+                        replacement: '.min.js"'
+                    }, {
+                        pattern:/\.min\.min\.js"/gi,
+                        replacement: '.min.js"'
                     }]
                 }
             }
