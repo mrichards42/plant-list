@@ -37,6 +37,28 @@
             return ddoc;
         },
         /**
+         * Insert or update a doc
+         * @param doc
+         * @param [equalsFunction=angular.equals] Function to determine if two docs are equal
+         * @returns {Promise} get if doc exists, put if not
+         */
+        'upsert': function(doc, equalsFunction) {
+            var db = this;
+            equalsFunction = equalsFunction || angular.equals;
+            return db.get(doc._id).then(function(result) {
+                // Update _rev
+                doc._rev = result.rev;
+                if (! equalsFunction(doc, result))
+                    return db.put(doc);
+                else
+                    return result;
+            }).catch(function (err) {
+                if (err.status === 404)
+                    return db.put(doc); // Doc does not exist; insert
+                throw err;
+            });
+        },
+        /**
          * Insert or update a view design document
          * Compares map/reduce functions so the design doc isn't updated if it is the same
          * @param name
@@ -47,19 +69,9 @@
         'upsertView': function(name, mapFunction, reduceFunction) {
             var db = this;
             var doc = db.createViewDoc(name, mapFunction, reduceFunction);
-            return db.get(doc._id).then(function(result) {
-                // Compare map/reduce functions
-                if (result.views[name].map != doc.views[name].map ||
-                        result.views[name].reduce != doc.views[name].reduce) {
-                    // Put
-                    doc._rev = result._rev;
-                    return db.put(doc);
-                }
-                return result;
-            }).catch(function (err) {
-                if (err.status === 404)
-                    return db.put(doc); // Doc does not exist; insert
-                throw err;
+            return db.upsert(doc, function(a, b) {
+                return a.views[name].map === b.views[name].map &&
+                    a.views[name].reduce === b.views[name].reduce;
             });
         }
     });
