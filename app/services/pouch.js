@@ -102,13 +102,36 @@ angular.module('PlantsApp').run(['$q', function($q) {
         }
     });
 
-    // pouch-authorization Cloudant fix
-    // Add x-www-form-urlencoded and a urlencoded body for Cloudant databases
+    /**
+     * Get a path using the database's host
+     * @param db PouchDB
+     * @param path path after host
+     * @returns {string}
+     */
+    function getUrl(db, path) {
+        var host = db.getHost(db.getUrl());
+        return host.protocol + '://' + host.host + '/' + (path || '');
+    }
+
+    /**
+     * Is this a Cloudant db?
+     * @param db
+     * @returns {true/false}
+     */
+    function isCloudant(db) {
+        return db.getUrl().match(/\.cloudant\.com/);
+    }
+
+    // Security/Users functions
     var pouchLogin = PouchDB.prototype.login;
+    var pouchSignup = PouchDB.prototype.signup;
+
     PouchDB.plugin({
+        // pouch-authorization Cloudant fix
+        // Add x-www-form-urlencoded and a urlencoded body for Cloudant databases
         'login': function (username, password, opts, callback) {
             opts = opts || {};
-            if (this.getUrl().match(/\.cloudant\.com/)) {
+            if (isCloudant(this)) {
                 opts.ajax = angular.extend({
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                     body: 'name=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password)
@@ -121,6 +144,56 @@ angular.module('PlantsApp').run(['$q', function($q) {
             if (callback)
                 args.push(callback);
             return pouchLogin.apply(this, args);
+        },
+        // pouch-authorization Cloudant fix
+        // Hash password during signup
+        // Default 'user' role
+        'signup': function (username, password, opts, callback) {
+            opts = opts || {};
+            opts.roles = opts.roles || ['user'];
+            if (isCloudant(this)) {
+                // SHA-1 hash
+                var salt = PouchDB.utils.uuid();
+                var hash = CryptoJS.SHA1(password + salt).toString();
+                // Add to doc
+                opts.metadata = opts.metadata || {};
+                opts.metadata.password_sha = hash;
+                opts.metadata.salt = salt;
+                opts.metadata.password_scheme = 'simple';
+                opts.metadata.password = ''; // blank out password
+            }
+            // Assemble args and call function
+            var args = [username, password, opts];
+            if (callback)
+                args.push(callback);
+            return pouchSignup.apply(this, args);
+        },
+        /**
+         * Ensure a _users database exists and add _security documents to each database
+         *
+         * Requires admin to be logged in, and is mostly useful for cloudant.
+         *
+         * @param [dbList=current database] Array of database names that should have _security documents
+         * @param [securityDoc] Defaults to couchdb_auth_only with 'user' role having read/write access
+         * @returns {Promise} $q.all(putSecurity() for each database)
+         */
+        'setupSecurity': function(dbList, securityDoc) {
+            var db = this;
+            dbList = dbList || [db.getHost(db.getUrl()).db];
+            securityDoc = securityDoc || {
+                "couchdb_auth_only": true,
+                "members": {
+                    "names": [],
+                    "roles": ['user']
+                },
+                "admins": {}
+            };
+            // By *not* passing skipSetup: true, Pouch will try to create the _users db
+            var usersDb = new PouchDB(getUrl(db, '_users'));
+            // Add security doc to all databases
+            return $q.all(dbList.map(function(name) {
+                return new PouchDB(getUrl(db, name)).putSecurity(securityDoc);
+            }));
         }
     });
 }])})();
