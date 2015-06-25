@@ -3,6 +3,8 @@
  */
 
 (function () {
+angular.module('PlantsApp').run(['$q', function($q) {
+
     PouchDB.plugin({
         /**
          * Put a document if it does not exist
@@ -97,4 +99,4 @@
             return pouchLogin.apply(this, args);
         }
     });
-})();
+}])})();
