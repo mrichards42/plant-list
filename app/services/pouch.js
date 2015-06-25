@@ -169,6 +169,9 @@ angular.module('PlantsApp').run(['$q', function($q) {
                 opts.metadata.salt = salt;
                 opts.metadata.password_scheme = 'simple';
                 opts.metadata.password = ''; // blank out password
+                // Add identifying data
+                opts.metadata.useragent = navigator.userAgent;
+                opts.metadata.created = new Date().toString();
             }
             // Assemble args and call function
             var args = [username, password, opts];

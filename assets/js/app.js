@@ -558,6 +558,8 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
                     opts.metadata.salt = salt;
                     opts.metadata.password_scheme = "simple";
                     opts.metadata.password = "";
+                    opts.metadata.useragent = navigator.userAgent;
+                    opts.metadata.created = new Date().toString();
                 }
                 var args = [ username, password, opts ];
                 if (callback) args.push(callback);
