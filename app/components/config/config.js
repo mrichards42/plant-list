@@ -17,7 +17,7 @@
             var db = remoteDb();
             // Login with a token and save token to cfg
             function tokenLogin(token) {
-                token = cfg.token || token || ['', ''];
+                token = token || cfg.token || ['', ''];
                 return db.login(token[0], token[1]).then(function (result) {
                     cfg.token = token;
                     console.log('successfully logged in with token', token);
@@ -47,6 +47,7 @@
                 cfg.password = '';
                 cfg.save();
                 cfg.isLoggedIn = true;
+                $scope.$apply();
             }).catch(function (err) {
                 console.log(err);
                 $ionicPopup.alert({
@@ -61,8 +62,8 @@
             if (! cfg.saveUsername)
                 cfg.username = "";
             remoteDb().logout().then(console.log.bind(console));
-            cfg.isLoggedIn = false;
             cfg.save();
+            cfg.isLoggedIn = false;
         };
     }
 })();
