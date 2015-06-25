@@ -76,6 +76,14 @@ angular.module('PlantsApp').run(['$q', function($q) {
                 return a.views[name].map === b.views[name].map &&
                     a.views[name].reduce === b.views[name].reduce;
             });
+        },
+        /**
+         * Open a new PouchDB on the same server
+         * @param [name=current db] Database name
+         * @returns {PouchDB}
+         */
+        'openDB': function(name) {
+            return new PouchDB(name ? getUrl(this, name) : this.getUrl());
         }
     });
 
@@ -192,7 +200,7 @@ angular.module('PlantsApp').run(['$q', function($q) {
             var usersDb = new PouchDB(getUrl(db, '_users'));
             // Add security doc to all databases
             return $q.all(dbList.map(function(name) {
-                return new PouchDB(getUrl(db, name)).putSecurity(securityDoc);
+                return db.openDB(name).putSecurity(securityDoc);
             }));
         }
     });
