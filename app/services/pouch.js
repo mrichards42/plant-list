@@ -5,6 +5,7 @@
 (function () {
 angular.module('PlantsApp').run(['$q', function($q) {
 
+    // Utility functions
     PouchDB.plugin({
         /**
          * Put a document if it does not exist
@@ -74,6 +75,29 @@ angular.module('PlantsApp').run(['$q', function($q) {
             return db.upsert(doc, function(a, b) {
                 return a.views[name].map === b.views[name].map &&
                     a.views[name].reduce === b.views[name].reduce;
+            });
+        }
+    });
+
+    // Security functions
+    PouchDB.plugin({
+        /**
+         * Get the security document
+         * @returns {Promise} _security doc
+         */
+        'getSecurity': function () {
+            return this.request({url: '_security'});
+        },
+        /**
+         * Put the security document
+         * @param doc _security document
+         * @returns {Promise} doc
+         */
+        'putSecurity': function (doc) {
+            return this.request({
+                url: '_security',
+                body: doc,
+                method: 'PUT'
             });
         }
     });
