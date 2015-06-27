@@ -1,0 +1,6 @@
+<button ng-controller="SyncCtrl"
+        class="button button-icon icon"
+        ng-class="isSyncing ? '' : 'ion-android-sync'"
+        ng-click="sync()">
+    <ion-spinner icon="bubbles" class="spinner-light" ng-show="isSyncing"></ion-spinner>
+</button>
