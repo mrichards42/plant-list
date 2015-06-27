@@ -1,8 +1,8 @@
 (function() {
     angular.module('PlantsApp')
-        .factory('plantList', ['$http', '$q', 'pouchDB', plantListService]);
+        .factory('plantList', ['$http', '$q', 'pouchDB', 'pouchReplicate', plantListService]);
 
-    function plantListService($http, $q, pouchDB) {
+    function plantListService($http, $q, pouchDB, pouchReplicate) {
         var dbPromise = plantsDB();
         var dbIsLoading = true;
         /**
@@ -299,6 +299,16 @@
                         console.log('getPlants: result', result);
                         return getDocs(result.rows);
                     })
+                });
+            }),
+            /**
+             * Pull changes from the remote database
+             * @param [remoteDb] already opened remote database. Created if necessary.
+             * @returns {Promise} PouchDB replicator
+             */
+            'sync': withDB(function(db, remoteDb) {
+                return $q.when(remoteDb || pouchDB.openRemote('plants')).then(function(remoteDb) {
+                    return pouchReplicate(remoteDb, db);
                 });
             })
         };
