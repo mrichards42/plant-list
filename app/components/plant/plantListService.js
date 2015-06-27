@@ -1,8 +1,8 @@
 (function() {
     angular.module('PlantsApp')
-        .factory('plantList', ['$http', '$q', 'pouchDB', 'pouchReplicate', plantListService]);
+        .factory('plantList', ['$q', 'pouchDB', 'pouchReplicate', plantListService]);
 
-    function plantListService($http, $q, pouchDB, pouchReplicate) {
+    function plantListService($q, pouchDB, pouchReplicate) {
         var dbPromise = plantsDB();
         var dbIsLoading = true;
         /**
@@ -10,47 +10,10 @@
          * @returns {PouchDB}
          */
         function plantsDB() {
+            dbIsLoading = false;
             var db = pouchDB('plants');
-            return $q.all([
-                // Add plant data
-                db.get('VIRO3').catch(function (err) {
-                    if (err.status !== 404)
-                        throw err;
-                    return $http.get('assets/json/all_plants.json').then(function (result) {
-                        return result.data.map(function(row) { row._id = row.code; return row; });
-                    }).catch(function (err) {
-                        console.log('Error fetching all_plants.json', err);
-                    }).then(function (rows) {
-                        console.log('plants', rows);
-                        return db.bulkDocs(rows);
-                    });
-                }),
-                // Add Diversity lists
-                db.get('list-plant:2014 TALL Diversity/TALL_001/Subplot 31/TALL_001 31.1.10:VIRO3').catch(function (err) {
-                    if (err.status !== 404)
-                        throw err;
-                    return $http.get('assets/json/div_lists.json').then(function (result) {
-                        console.log('list-plants', result);
-                        return db.bulkDocs(result.data);
-                    }).catch(function (err) {
-                        console.log('Error fetching div_lists.json', err);
-                    });
-                }),
-                // Add Unknowns
-                db.get('unk:2015:TALL:001').catch(function (err) {
-                    if (err.status !== 404)
-                        throw err;
-                    return $http.get('assets/json/TALL_unknowns.json').then(function (result) {
-                        console.log('unknowns', result);
-                        return db.bulkDocs(result.data);
-                    }).catch(function (err) {
-                        console.log('Error fetching TALL_unknowns.json', err);
-                    });
-                })
-            ]).then(function () {
-                dbIsLoading = false;
-                return db;
-            });
+            db.sync();
+            return db;
         }
 
         // Decorator function that waits for the db to initialize
