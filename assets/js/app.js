@@ -3,6 +3,11 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
         restrict: "E",
         templateUrl: "app/menus/main.html"
     };
+}).directive("syncButton", function() {
+    return {
+        restrict: "E",
+        templateUrl: "app/components/sync/sync.html"
+    };
 });
 
 (function() {
@@ -29,42 +34,21 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
 })();
 
 (function() {
-    angular.module("PlantsApp").controller("ConfigCtrl", [ "$scope", "$ionicPopup", "config", ConfigCtrl ]);
-    function ConfigCtrl($scope, $ionicPopup, config) {
+    angular.module("PlantsApp").controller("ConfigCtrl", [ "$scope", "$ionicPopup", "config", "pouchDB", "plantList", ConfigCtrl ]);
+    function ConfigCtrl($scope, $ionicPopup, config, pouchDB, plantList) {
         var cfg = config.load();
-        function remoteDb() {
-            return new PouchDB("https://" + cfg.database + ".cloudant.com/plants", {
-                skipSetup: true
-            });
-        }
-        function login() {
-            var db = remoteDb();
-            function tokenLogin(token) {
-                token = token || cfg.token || [ "", "" ];
-                return db.login(token[0], token[1]).then(function(result) {
-                    cfg.token = token;
-                    console.log("successfully logged in with token", token);
-                    return result;
-                });
-            }
-            return tokenLogin().catch(function(err) {
-                if (err.status !== 403 && err.status !== 400) throw err;
-                return db.login(cfg.username, cfg.password).then(function(result) {
-                    console.log(result);
-                    var token = [ PouchDB.utils.uuid(), PouchDB.utils.uuid() ];
-                    return db.signup(token[0], token[1]).then(function() {
-                        return tokenLogin(token);
-                    });
-                });
-            });
+        function getRemoteUrl() {
+            return "https://" + cfg.database + ".cloudant.com/plants";
         }
         $scope.config = cfg;
         $scope.login = function() {
             cfg.database = cfg.username;
-            login().then(function() {
+            pouchDB.openRemote(getRemoteUrl()).then(function(db) {
+                plantList.sync(db).then(console.log.bind(console)).catch(console.log.bind(console));
+                if (!cfg.saveUsername) cfg.username = "";
                 cfg.password = "";
-                cfg.save();
                 cfg.isLoggedIn = true;
+                cfg.save();
                 $scope.$apply();
             }).catch(function(err) {
                 console.log(err);
@@ -75,11 +59,11 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
             });
         };
         $scope.logout = function() {
-            cfg.password = "";
-            if (!cfg.saveUsername) cfg.username = "";
-            remoteDb().logout().then(console.log.bind(console));
-            cfg.save();
+            pouchDB.openRemote(getRemoteUrl(), {
+                skipSetup: true
+            }).logout();
             cfg.isLoggedIn = false;
+            cfg.save();
         };
     }
 })();
@@ -131,11 +115,8 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
 })();
 
 (function() {
-    angular.module("PlantsApp").controller("PlantListCtrl", [ "$scope", "$stateParams", "$ionicLoading", "plantList", PlantListCtrl ]);
-    function PlantListCtrl($scope, $stateParams, $ionicLoading, plantList) {
-        if (plantList.isLoading()) $ionicLoading.show({
-            template: "Initializing Plant List..."
-        });
+    angular.module("PlantsApp").controller("PlantListCtrl", [ "$scope", "$stateParams", "plantList", PlantListCtrl ]);
+    function PlantListCtrl($scope, $stateParams, plantList) {
         $scope.genusSuffix = function(plant) {
             if (plant.code.lastIndexOf("SPP") == plant.code.length - 3) return " spp. (lump)"; else if (plant.scientific && plant.scientific == plant.genus) return " sp."; else return "";
         };
@@ -162,7 +143,6 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
         plantList.getPlants(listId).then(function(list) {
             console.log(list);
             $scope.plants = list;
-            $ionicLoading.hide();
         });
     }
 })();
@@ -196,64 +176,16 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
 })();
 
 (function() {
-    angular.module("PlantsApp").factory("plantList", [ "$http", "$q", "pouchDB", plantListService ]);
-    function plantListService($http, $q, pouchDB) {
-        var dbPromise = plantsDB();
-        var dbIsLoading = true;
-        function plantsDB() {
-            var db = pouchDB("plants");
-            return $q.all([ db.get("VIRO3").catch(function(err) {
-                if (err.status !== 404) throw err;
-                return $http.get("assets/json/all_plants.json").then(function(result) {
-                    return result.data.map(function(row) {
-                        row._id = row.code;
-                        return row;
-                    });
-                }).catch(function(err) {
-                    console.log("Error fetching all_plants.json", err);
-                }).then(function(rows) {
-                    console.log("plants", rows);
-                    return db.bulkDocs(rows);
-                });
-            }), db.get("list-plant:2014 TALL Diversity/TALL_001/Subplot 31/TALL_001 31.1.10:VIRO3").catch(function(err) {
-                if (err.status !== 404) throw err;
-                return $http.get("assets/json/div_lists.json").then(function(result) {
-                    console.log("list-plants", result);
-                    return db.bulkDocs(result.data);
-                }).catch(function(err) {
-                    console.log("Error fetching div_lists.json", err);
-                });
-            }), db.get("unk:2015:TALL:001").catch(function(err) {
-                if (err.status !== 404) throw err;
-                return $http.get("assets/json/TALL_unknowns.json").then(function(result) {
-                    console.log("unknowns", result);
-                    return db.bulkDocs(result.data);
-                }).catch(function(err) {
-                    console.log("Error fetching TALL_unknowns.json", err);
-                });
-            }) ]).then(function() {
-                dbIsLoading = false;
-                return db;
-            });
-        }
-        function withDB(func) {
-            return function() {
-                var originalArgs = Array.prototype.slice.call(arguments);
-                return dbPromise.then(function(db) {
-                    return func.apply(func, [ db ].concat(originalArgs));
-                });
-            };
-        }
+    angular.module("PlantsApp").factory("plantList", [ "$q", "pouchDB", "pouchReplicate", plantListService ]);
+    function plantListService($q, pouchDB, pouchReplicate) {
+        var db = pouchDB("plants");
         var self = {
             ALL_PLANTS: "All Plants",
             listMap: {},
-            isLoading: function() {
-                return dbIsLoading;
-            },
             isUnknown: function(plant) {
                 return (typeof plant === "object" ? plant._id : plant).substr(0, 3) == "unk";
             },
-            getPlant: withDB(function(db, code) {
+            getPlant: function(code) {
                 return db.get(code).then(function(plant) {
                     if (!self.isUnknown(plant)) return plant;
                     return db.allDocs({
@@ -277,12 +209,12 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
                         });
                     });
                 });
-            }),
+            },
             getListName: function(listId) {
                 if (listId == self.ALL_PLANTS) return listId;
                 return listId.substr(listId.lastIndexOf("/") + 1);
             },
-            getLists: withDB(function(db) {
+            getLists: function() {
                 console.log("getLists start", new Date());
                 return db.allDocs({
                     startkey: "A",
@@ -377,8 +309,8 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
                         return lists;
                     });
                 });
-            }),
-            getPlants: withDB(function(db, id) {
+            },
+            getPlants: function(id) {
                 var options;
                 function getDocs(rows) {
                     return rows.map(function(row) {
@@ -444,9 +376,128 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
                         return getDocs(result.rows);
                     });
                 });
-            })
+            },
+            sync: function(remoteDb) {
+                return $q.when(remoteDb || pouchDB.openRemote("plants")).then(function(remoteDb) {
+                    return pouchReplicate(remoteDb, db);
+                });
+            }
         };
+        self.sync();
         return self;
+    }
+})();
+
+(function() {
+    angular.module("PlantsApp").factory("pouchReplicate", function() {
+        function replicator(source, target, options) {
+            sendEvent("start");
+            ++running;
+            return getDumpRev(target).then(function(targetRev) {
+                return getDumpRev(source).then(function(sourceRev) {
+                    console.log("Comparing pouchdb-dump revisions");
+                    console.log("source", sourceRev, "target", targetRev);
+                    return sourceRev > targetRev;
+                });
+            }).then(function(shouldUpdate) {
+                console.log(shouldUpdate ? "Using pouchdb-dump" : "Skipping pouchdb-dump");
+                if (!shouldUpdate) return;
+                return source.get("_local/dump").then(function(dump) {
+                    return target.load(dump.dump, {
+                        proxy: source.getUrl()
+                    }).then(function() {
+                        return saveDumpRev(target, dump._rev);
+                    });
+                }).then(function() {
+                    return target.info().then(function(info) {
+                        updateInfo({
+                            ok: true,
+                            docs_read: info.doc_count,
+                            docs_written: info.doc_count
+                        });
+                    });
+                });
+            }).then(function() {
+                console.log("Starting replication");
+                var rep = PouchDB.replicate(source, target, options);
+                rep.on("complete", function(info) {
+                    updateInfo(info);
+                    onDone();
+                }).on("error", function(err) {
+                    errors.push(err);
+                    onDone();
+                });
+                return rep;
+            }).catch(function(err) {
+                console.log(err);
+            });
+        }
+        function getDumpRev(db) {
+            return db.get("_local/dump-info").then(function(info) {
+                return info.latest_rev;
+            }).catch(function(err) {
+                if (err.status !== 404) throw err;
+                return "0";
+            });
+        }
+        function saveDumpRev(db, rev) {
+            return db.put({
+                _id: "_local/dump-info",
+                latest_rev: rev
+            });
+        }
+        replicator.on = function(event, handler) {
+            handlers[event] && handlers[event].push(handler);
+            return replicator;
+        };
+        var handlers = {
+            complete: [],
+            error: [],
+            start: []
+        };
+        function sendEvent(event) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            angular.forEach(handlers[event], function(callback) {
+                callback.apply(null, args);
+            });
+        }
+        var running = 0;
+        var errors = [];
+        var infos = {};
+        function updateInfo(i) {
+            infos.ok = (infos.ok === undefined ? true : infos.ok) && (i.ok === undefined ? true : i.ok);
+            infos.errors = (infos.errors || []).concat(i.errors || []);
+            infos.last_seq = i.last_seq || 0;
+            angular.forEach([ "doc_write_failures", "docs_read", "docs_written" ], function(key) {
+                infos[key] = (infos[key] || 0) + (i[key] || 0);
+            });
+        }
+        function onDone() {
+            --running;
+            if (running <= 0) {
+                if (errors.length > 0) sendEvent("error", errors); else sendEvent("complete", infos);
+                errors = [];
+                infos = {};
+            }
+        }
+        return replicator;
+    });
+})();
+
+(function() {
+    angular.module("PlantsApp").controller("SyncCtrl", [ "$scope", "toast", "plantList", "pouchReplicate", SyncCtrl ]);
+    function SyncCtrl($scope, toast, plantList, pouchReplicate) {
+        $scope.isSyncing = false;
+        $scope.sync = plantList.sync;
+        pouchReplicate.on("start", function() {
+            $scope.isSyncing = true;
+        }).on("complete", function(info) {
+            $scope.isSyncing = false;
+            if (info.docs_written && info.docs_read) toast.show("Updated " + info.docs_written + " of " + info.docs_read + " docs");
+        }).on("error", function() {
+            $scope.isSyncing = false;
+            toast.show("Errors during sync");
+        });
     }
 })();
 
@@ -468,7 +519,7 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
 })();
 
 (function() {
-    angular.module("PlantsApp").run([ "$q", function($q) {
+    angular.module("pouchdb").run([ "$q", "pouchDB", function($q, pouchDB) {
         PouchDB.plugin({
             putIfNotExists: function(doc, options) {
                 return this.put(doc, options).catch(function(err) {
@@ -580,8 +631,68 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
                 return $q.all(dbList.map(function(name) {
                     return db.openDB(name).putSecurity(securityDoc);
                 }));
+            },
+            tokenLogin: function(username, password) {
+                var db = this;
+                var token = getToken(db) || [];
+                return loginWithToken(db, token).catch(function(err) {
+                    if (err.status !== 403 && err.status !== 400) throw err;
+                    if (!username || !password) throw err;
+                    return db.login(username, password).then(function(result) {
+                        console.log(result);
+                        var token = [ PouchDB.utils.uuid(), PouchDB.utils.uuid() ];
+                        return db.signup(token[0], token[1]).then(function() {
+                            return loginWithToken(db, token);
+                        });
+                    });
+                });
             }
         });
+        var TOKEN_KEY = "plantlist-token:";
+        var REMOTE_KEY = "plantlist-remote:";
+        function getHost(db) {
+            return db.getHost(db.getUrl());
+        }
+        function getToken(db) {
+            return JSON.parse(localStorage.getItem(TOKEN_KEY + getHost(db).host));
+        }
+        function saveToken(db, token) {
+            var key = TOKEN_KEY + getHost(db).host;
+            if (!token) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(token));
+        }
+        function loginWithToken(db, token) {
+            return db.login(token[0], token[1]).then(function(result) {
+                token[2] = db.getHost(db.getUrl()).host;
+                saveToken(db, token);
+                console.log("successfully logged in with token", token);
+                return result;
+            });
+        }
+        pouchDB.openRemote = function(name, opts) {
+            if (typeof name === "object") {
+                opts = name;
+            } else {
+                opts = opts || {};
+                if (name.indexOf("://") !== -1) opts.url = name; else opts.name = name;
+            }
+            var url = opts.url || localStorage.getItem(REMOTE_KEY + opts.name);
+            if (!url) {
+                return $q.reject({
+                    status: 400,
+                    name: "bad_request",
+                    reason: "Missing/invalid DB name",
+                    error: true
+                });
+            }
+            var db = pouchDB(url, {
+                skipSetup: true
+            });
+            if (opts.skipSetup) return db;
+            return db.tokenLogin(opts.username, opts.password).then(function() {
+                localStorage.setItem(REMOTE_KEY + (opts.name || getHost(db).db), db.getUrl());
+                return db;
+            });
+        };
     } ]);
 })();
 
@@ -607,11 +718,31 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
     }
 })();
 
+(function() {
+    angular.module("PlantsApp").factory("toast", [ "$ionicLoading", function($ionicLoading) {
+        return {
+            show: function(opts) {
+                if (typeof opts === "string") opts = {
+                    message: opts
+                };
+                var message = opts.message || "";
+                return $ionicLoading.show(angular.extend(opts, {
+                    noBackdrop: true,
+                    duration: 2e3,
+                    template: message
+                }));
+            },
+            hide: $ionicLoading.hide
+        };
+    } ]);
+})();
+
 angular.module("PlantsApp").run([ "$templateCache", function($templateCache) {
     "use strict";
     $templateCache.put("app/components/config/config.html", '<ion-view view-title=Config><ion-content><div ng-hide=config.isLoggedIn><form name=loginForm ng-submit=login()><div class=list><label class="item item-input"><input type=text ng-model=config.username placeholder=Username required></label><label class="item item-input"><input type=password ng-model=config.password placeholder=Password required></label><ion-checkbox class="item item-input" ng-model=config.saveUsername>Save Username</ion-checkbox></div></form></div><div><div ng-show=config.isLoggedIn class=padding>Signed in as <strong>{{ config.username }}</strong> <button class="button button-block button-positive" ng-click=logout()>Sign Out</button></div><div ng-hide=config.isLoggedIn class=padding><button class="button button-block button-positive" ng-click=login() ng-disabled=loginForm.$invalid>Sign In</button></div></div></ion-content></ion-view>');
     $templateCache.put("app/components/plant/detail.html", '<ion-view><ion-nav-title>{{ unknown.name || plant.scientific }}</ion-nav-title><ion-content><div ng-show=unknown><h2>{{ unknown.name }}</h2><div class=row><div class=col-33>Code</div><div class=col>{{ unknown.code }}{{ unknown.idCode ? \' (\' + unknown.idCode + \')\': \'\'}}</div></div><div class=row><div class=col-33>Collected</div><div class=col>{{ unknown.collectedDate }} {{ unknown.collector }}</div></div><div class=row><div class=col-33>Plot</div><div class=col>{{ unknown.plot }}</div></div><div class=row><div class=col-33>Habitat</div><div class=col>{{ unknown.habitat }}</div></div><div class=row><div class=col-33>Description</div><div class=col>{{ unknown.description }}</div></div><h3 ng-show="unknown.synonyms.length > 0">Synonyms</h3><div class=row ng-repeat="synonym in unknown.synonyms"><a class=col-25 ui-sref=detail({id:synonym._id})>{{ synonym.code }}</a><div class="col scientific">{{ synonym.name }}</div></div></div><div ng-show=plant><h2>{{ plant.scientific }}</h2><h3>{{ plant.common }}</h3><a href="http://plants.usda.gov/core/profile?symbol={{ plant.code }}">USDA</a><div class=plant-detail><div class=row><div class=col>Code</div><div class=col>{{ plant.code }}</div></div><div class=row><div class=col>Family</div><div class=col>{{ plant.family }} ({{ plant.familyCommon }})</div></div><div class=row><div class=col>Growth Form</div><div class=col>{{ plant.growth.join(\', \') }}</div></div></div><h3 ng-show="plant.synonyms.length > 0">Synonyms</h3><div class=row ng-repeat="synonym in plant.synonyms"><div class=col-25>{{ synonym.code }}</div><div class="col scientific">{{ synonym.scientific }}</div></div><div class=plant-thumb><img src="{{ thumbnail }}"><div class=thumb-caption>{{ caption }}</div></div></div></ion-content></ion-view>');
     $templateCache.put("app/components/plant/list.html", '<ion-view><ion-nav-title>{{ listName }}</ion-nav-title><ion-header-bar align-title=left class="bar-subheader bar-clear item-input-inset"><label class=item-input-wrapper><i class="icon ion-ios-search placeholder-icon"></i> <input type=search placeholder=Search ng-model=searchText> <button class="button ion-android-close button-dark button-clear" ng-show=searchText on-tap="searchText=\'\'"></button></label></ion-header-bar><ion-content><ion-list class=plant-list><ion-item collection-repeat="plant in plants | filter:plantFilter(searchText) | orderBy:\'scientific || code\'" ui-sref=detail({id:plant._id}) ng-class="(plant.idYear || plant.idCode) ? \'id-\' + (plant.idYear || 2015) : \'\'"><div class=col-code><div>{{ plant.code }}</div><div>{{ plant.idCode }}</div></div><div class=col-name><div ng-class="plant.scientific ? \'scientific\' : \'common\'">{{ plant.scientific || plant.name }}{{ genusSuffix(plant) }}</div><div ng-class="plant.scientific ? \'common\' : \'scientific\'">{{ plant.common || plant.idScientific }}</div></div><div class=col-growth><div ng-repeat="form in plant.growth" ng-class="\'growth-\' + form.toLowerCase().split(\'/\')[0]">{{ form == "Fern" ? "Fn" : form[0] }}</div></div></ion-item></ion-list></ion-content></ion-view>');
+    $templateCache.put("app/components/sync/sync.html", "<button ng-controller=SyncCtrl class=\"button button-icon icon\" ng-class=\"isSyncing ? '' : 'ion-android-sync'\" ng-click=sync()><ion-spinner icon=bubbles class=spinner-light ng-show=isSyncing></ion-spinner></button>");
     $templateCache.put("app/menus/list_item.html", "<ion-item ng-click><a ng-style=\"{'padding-left':(16 * (list.depth = 1 + (list.parent.depth || 0))) +  'px'}\" ng-click=toggleChildren(list)><i class=expand-collapse ng-class=\"areChildrenShown(list) ? 'ion-arrow-down-b' : 'ion-arrow-right-b'\" ng-show=\"list.children.length > 0\"></i></a> <span ui-sref=list({id:list.id}) menu-close>{{ list.name }} ({{ list.count }})</span></ion-item><div ng-show=areChildrenShown(list)><div ng-repeat=\"list in list.children\" ng-include=\"'app/menus/list_item.html'\"></div></div>");
     $templateCache.put("app/menus/main.html", '<ion-header-bar class="bar bar-header bar-balanced"><h1 class=title>Plant Lists</h1></ion-header-bar><ion-content has-header=true ng-controller=MainMenuCtrl><ion-list><div ng-repeat="list in plantLists" ng-include="\'app/menus/list_item.html\'"></div></ion-list></ion-content>');
 } ]);
