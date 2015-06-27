@@ -205,6 +205,61 @@ angular.module('PlantsApp').run(['$q', function($q) {
             return $q.all(dbList.map(function(name) {
                 return db.openDB(name).putSecurity(securityDoc);
             }));
+        },
+        /**
+         * Login with a token, or create a new token for login
+         * @param [username] Credentials if token does not exist
+         * @param [password]
+         * @returns {Promise} result of login
+         */
+        'tokenLogin': function(username, password) {
+            var db = this;
+            var token = getToken(db) || [];
+            // Try to login with the token
+            return loginWithToken(db, token).catch(function(err) {
+                if (err.status !== 403 && err.status !== 400)
+                    throw err;
+                if (! username || ! password)
+                    throw err;
+                // Login with real credentials
+                return db.login(username, password).then(function(result) {
+                    console.log(result);
+                    // Create a dummy login to act as a token
+                    var token = [PouchDB.utils.uuid(), PouchDB.utils.uuid()];
+                    return db.signup(token[0], token[1]).then(function() {
+                        // Try again
+                        return loginWithToken(db, token);
+                    });
+                });
+            });
         }
     });
+
+    // Login caching
+    var TOKEN_KEY = 'plantlist-token:';
+    function getHost(db) {
+        return db.getHost(db.getUrl());
+    }
+
+    function getToken(db) {
+        return JSON.parse(localStorage.getItem(TOKEN_KEY + getHost(db).host));
+    }
+
+    function saveToken(db, token) {
+        var key = TOKEN_KEY + getHost(db).host;
+        if (! token)
+            localStorage.removeItem(key);
+        else
+            localStorage.setItem(key, JSON.stringify(token));
+    }
+
+    // Login with a token and save it
+    function loginWithToken(db, token) {
+        return db.login(token[0], token[1]).then(function (result) {
+            token[2] = db.getHost(db.getUrl()).host;
+            saveToken(db, token);
+            console.log('successfully logged in with token', token);
+            return result;
+        });
+    }
 }])})();
