@@ -12,7 +12,11 @@
         $scope.config = cfg;
         $scope.login = function() {
             cfg.database = cfg.username;
-            pouchDB.openRemote(getRemoteUrl()).then(function(db) {
+            pouchDB.openRemote({
+                url: getRemoteUrl(),
+                username: cfg.username,
+                password: cfg.password
+            }).then(function(db) {
                 // Start update
                 plantList.sync(db).then(console.log.bind(console)).catch(console.log.bind(console));
                 // Don't save credentials
