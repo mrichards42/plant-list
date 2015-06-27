@@ -101,3 +101,12 @@
     min-width: 18px;
     display: inline-block;
 }
+
+/* Fix for $ionicLoading used as a toast: allow click */
+.loading-container {
+    z-index: auto;
+}
+
+.loading-container .loading {
+    z-index: 13;
+}
