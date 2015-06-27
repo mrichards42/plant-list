@@ -3,26 +3,7 @@
         .factory('plantList', ['$q', 'pouchDB', 'pouchReplicate', plantListService]);
 
     function plantListService($q, pouchDB, pouchReplicate) {
-        var dbPromise = plantsDB();
-        var dbIsLoading = true;
-        /**
-         * Get and initialize the plants database
-         * @returns {PouchDB}
-         */
-        function plantsDB() {
-            dbIsLoading = false;
-            return pouchDB('plants');
-        }
-
-        // Decorator function that waits for the db to initialize
-        function withDB(func) {
-            return function() {
-                var originalArgs = Array.prototype.slice.call(arguments);
-                return dbPromise.then(function(db) {
-                    return func.apply(func, [db].concat(originalArgs));
-                });
-            }
-        }
+        var db = pouchDB('plants');
 
         var self = {
             // List name for all plants
@@ -30,14 +11,6 @@
 
             // listId: list
             listMap: {},
-
-            /**
-             * Is the database still loading?
-             * @returns {boolean}
-             */
-            isLoading: function() {
-                return dbIsLoading;
-            },
 
             /**
              * Is this plant (or list) an unknown?
@@ -52,7 +25,7 @@
              * @param {String} code USDA code
              * @returns {Promise} plant
              */
-            getPlant: withDB(function(db, code) {
+            getPlant: function(code) {
                 return db.get(code).then(function(plant) {
                     if (! self.isUnknown(plant))
                         return plant;
@@ -78,7 +51,7 @@
                         });
                     });
                 });
-            }),
+            },
 
             /**
              * Return a list name from an id
@@ -96,7 +69,7 @@
              * Get stored plant lists
              * @returns {Promise} [{id:list_id, name:name, count:count, path:[parents, of, list]}, ...]
              */
-            getLists: withDB(function (db) {
+            getLists: function () {
                 console.log('getLists start', new Date());
                 // All plants
                 return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
@@ -190,14 +163,14 @@
                         return lists;
                     });
                 });
-            }),
+            },
 
             /**
              * Get plants from a stored plant list
              * @param {String} [id=ALL_PLANTS]
              * @returns {Promise} array of plants
              */
-            getPlants: withDB(function(db, id) {
+            getPlants: function(id) {
                 var options;
                 function getDocs(rows) {
                     return rows.map(function(row) {
@@ -261,18 +234,19 @@
                         return getDocs(result.rows);
                     })
                 });
-            }),
+            },
             /**
              * Pull changes from the remote database
              * @param [remoteDb] already opened remote database. Created if necessary.
              * @returns {Promise} PouchDB replicator
              */
-            'sync': withDB(function(db, remoteDb) {
+            'sync': function(remoteDb) {
                 return $q.when(remoteDb || pouchDB.openRemote('plants')).then(function(remoteDb) {
                     return pouchReplicate(remoteDb, db);
                 });
-            })
+            }
         };
+
         self.sync();
 
         return self;
