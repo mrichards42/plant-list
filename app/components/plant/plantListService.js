@@ -11,9 +11,7 @@
          */
         function plantsDB() {
             dbIsLoading = false;
-            var db = pouchDB('plants');
-            db.sync();
-            return db;
+            return pouchDB('plants');
         }
 
         // Decorator function that waits for the db to initialize
@@ -275,6 +273,7 @@
                 });
             })
         };
+        self.sync();
 
         return self;
     }
