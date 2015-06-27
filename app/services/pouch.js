@@ -1,9 +1,9 @@
 /**
- * PouchDB Utility functions
- */
+* PouchDB Utility functions
+*/
 
 (function () {
-angular.module('PlantsApp').run(['$q', function($q) {
+angular.module('pouchdb').run(['$q', 'pouchDB', function($q, pouchDB) {
 
     // Utility functions
     PouchDB.plugin({
@@ -237,6 +237,7 @@ angular.module('PlantsApp').run(['$q', function($q) {
 
     // Login caching
     var TOKEN_KEY = 'plantlist-token:';
+    var REMOTE_KEY = 'plantlist-remote:';
     function getHost(db) {
         return db.getHost(db.getUrl());
     }
@@ -261,5 +262,54 @@ angular.module('PlantsApp').run(['$q', function($q) {
             console.log('successfully logged in with token', token);
             return result;
         });
+    }
+
+    /**
+     * Open a remote database with a cached url
+     *
+     * This function caches url and login token
+     *
+     * @param [name] database name
+     * @param [opts] options object
+     * @param [opts.name] database name
+     * @param [opts.url] url if name is not provided
+     * @param [opts.skipSetup] don't login to the database
+     * @param [opts.username] username for login
+     * @param [opts.password] password for login
+     * @returns {Promise} logged in PouchDB
+     */
+    pouchDB.openRemote = function(name, opts) {
+        // Get options
+        if (typeof name === 'object') {
+            opts = name;
+        }
+        else {
+            opts = opts || {};
+            if (name.indexOf('://') !== -1)
+                opts.url = name;
+            else
+                opts.name = name;
+        }
+        // Open db
+        var url = opts.url || localStorage.getItem(REMOTE_KEY + opts.name);
+        if (! url) {
+            // Return a PouchDB-like error object
+            return $q.reject({
+                status: 400,
+                name: 'bad_request',
+                reason: 'Missing/invalid DB name',
+                error: true
+            });
+        }
+        var db = pouchDB(url, {skipSetup:true});
+        if (opts.skipSetup)
+            return db;
+        // login with token or supplied credentials
+        return db.tokenLogin(opts.username, opts.password)
+            .then(function() {
+                // Cache using supplied name or database name
+                localStorage.setItem(REMOTE_KEY + (opts.name || getHost(db).db), db.getUrl());
+                return db;
+            });
     }
 }])})();
