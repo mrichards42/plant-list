@@ -43,7 +43,11 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
         $scope.config = cfg;
         $scope.login = function() {
             cfg.database = cfg.username;
-            pouchDB.openRemote(getRemoteUrl()).then(function(db) {
+            pouchDB.openRemote({
+                url: getRemoteUrl(),
+                username: cfg.username,
+                password: cfg.password
+            }).then(function(db) {
                 plantList.sync(db).then(console.log.bind(console)).catch(console.log.bind(console));
                 if (!cfg.saveUsername) cfg.username = "";
                 cfg.password = "";
@@ -485,10 +489,21 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
 })();
 
 (function() {
-    angular.module("PlantsApp").controller("SyncCtrl", [ "$scope", "toast", "plantList", "pouchReplicate", SyncCtrl ]);
-    function SyncCtrl($scope, toast, plantList, pouchReplicate) {
+    angular.module("PlantsApp").controller("SyncCtrl", [ "$scope", "$state", "$ionicPopup", "toast", "plantList", "pouchReplicate", SyncCtrl ]);
+    function SyncCtrl($scope, $state, $ionicPopup, toast, plantList, pouchReplicate) {
         $scope.isSyncing = false;
-        $scope.sync = plantList.sync;
+        $scope.sync = function() {
+            plantList.sync().catch(function(err) {
+                if (err.name !== "authentication_error") throw err;
+                $ionicPopup.confirm({
+                    title: "Sync error",
+                    template: "Please login to sync plants database",
+                    okText: "Login"
+                }).then(function() {
+                    $state.go("config");
+                });
+            });
+        };
         pouchReplicate.on("start", function() {
             $scope.isSyncing = true;
         }).on("complete", function(info) {
