@@ -73,7 +73,10 @@
 
         // Save a dump revision to a database
         function saveDumpRev(db, rev) {
-            return db.put({'_id': '_local/dump-info', 'latest_rev': rev});
+            return db.upsert('_local/dump-info', function(doc) {
+                doc.latest_rev = rev;
+                return doc;
+            });
         }
 
         /**
