@@ -20,7 +20,8 @@ assets/libs/ionic/fonts/ionicons.ttf?v=2.0.1
 assets/libs/pouchdb/pouchdb-3.5.0.min.js
 assets/libs/pouchdb/angular-pouchdb.min.js
 assets/libs/pouchdb/pouchdb.authentication.min.js
-assets/libs/pouchdb/pouchdb-3.5.0.min.js
+assets/libs/pouchdb/pouchdb.load.js
+assets/libs/pouchdb/pouchdb.upsert.js
 https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/sha1-min.js
 
 NETWORK:
