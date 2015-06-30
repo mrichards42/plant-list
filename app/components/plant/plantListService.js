@@ -9,9 +9,6 @@
             // List name for all plants
             ALL_PLANTS: 'All Plants',
 
-            // listId: list
-            listMap: {},
-
             /**
              * Is this plant (or list) an unknown?
              * @returns {boolean}
@@ -69,99 +66,10 @@
              * Get stored plant lists
              * @returns {Promise} [{id:list_id, name:name, count:count, path:[parents, of, list]}, ...]
              */
-            getLists: function () {
-                console.log('getLists start', new Date());
-                // All plants
-                return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
-                    console.log('getLists got ALL_PLANTS', new Date());
-                    return [{
-                        id: self.ALL_PLANTS,
-                        name: self.ALL_PLANTS,
-                        parent: null,
-                        children: [],
-                        count: result.rows.length
-                    }];
-                }).then(function(lists) {
-                    // Add each list
-                    return db.allDocs({startkey:'list-plant:', endkey:'list-plant:\uffff'}).then(function(result) {
-                        console.log('getLists got list-plants', new Date());
-                        self.listMap = {}; // id: list (
-                        function addListPlant(id) {
-                            var idSplit = id.split(':');
-                            var listId = idSplit[1];
-                            var plantId = idSplit[2];
-                            var list = self.listMap[listId] || addList(listId);
-                            // Add plant
-                            while (list) {
-                                if (! list.plantsMap[plantId]) {
-                                    list.plantsMap[plantId] = true;
-                                    list.plants.push(plantId);
-                                    ++list.count;
-                                }
-                                list = list.parent;
-                            }
-                        }
-                        function addList(id) {
-                            // Split the last part of the path off
-                            var pathSplit = id.match(/(.*)\/([^\/]*)$/);
-                            var list = {
-                                id: id,
-                                name: pathSplit ? pathSplit[2] : id,
-                                parent: pathSplit ? pathSplit[1] : null,
-                                children: [],
-                                plants: [],
-                                plantsMap: {},
-                                count: 0
-                            };
-                            self.listMap[list.id] = list;
-                            // Create hierarchy
-                            if (list.parent) {
-                                // Get or create parent
-                                var parent = self.listMap[list.parent] || addList(list.parent);
-                                list.parent = parent;
-                                // Add this list's count up the hierarchy
-                                parent.children.push(list);
-                            }
-                            // Add to the main Array of lists
-                            if (! list.parent)
-                                lists.push(list);
-                            return list;
-                        }
-                        angular.forEach(result.rows, function(row) { addListPlant(row.key) });
-                        console.log('getLists list-plants done', new Date());
-                        return lists;
-                    });
-                }).then(function(lists) {
-                    // Unknowns
-                    return db.allDocs({startkey:'unk:', endkey:'unk:\uffff'}).then(function(result) {
-                        console.log('getLists got unknowns', new Date());
-                        function addUnknown(id) {
-                            var unk = id.split(':');
-                            var year = unk[1];
-                            var site = unk[2];
-                            // Add list
-                            var listName = 'Unknowns' + ' ' + year + ' ' + site;
-                            var listId = 'unk:' + year + ':' + site;
-                            var list = self.listMap[listId] || {
-                                id: listId,
-                                name: listName,
-                                parent: null,
-                                children: [],
-                                plants: [],
-                                count: 0
-                            };
-                            if (! self.listMap[list.id]) {
-                                self.listMap[list.id] = list;
-                                lists.push(list);
-                            }
-                            // Add plant to list
-                            list.count += 1;
-                            list.plants.push(id);
-                        }
-                        angular.forEach(result.rows, function(row) { addUnknown(row.key) });
-                        console.log('getLists unknowns done', new Date());
-                        return lists;
-                    });
+            getLists: function() {
+                return localDocMemoize('lists', buildLists)().then(function (data) {
+                    data.lists.map = data.map;
+                    return data.lists;
                 });
             },
 
@@ -184,55 +92,17 @@
                         endkey: 'Z\uffff',
                         include_docs: true
                     };
-                    console.log('getPlants: allDocs', options);
+                    console.log('getPlants: allDocs', options, new Date());
                     return db.allDocs(options).then(function(result) {
-                        console.log('getPlants: result', result);
+                        console.log('getPlants: result', result, new Date());
                         return getDocs(result.rows);
                     })
                 }
-                // Shortcut if we've called getLists() already
-                else if (self.listMap[id]) {
-                    return db.allDocs({keys:self.listMap[id].plants, include_docs:true}).then(function(result) {
+                return self.getLists().then(function(lists) {
+                    return db.allDocs({keys:lists.map[id].plants, include_docs:true}).then(function(result) {
                         console.log('getPlants: from computed list', result);
                         return getDocs(result.rows);
                     });
-                }
-                // Otherwise assemble the list from list-plant docs
-                if (! self.isUnknown(id))
-                    id = 'list-plant:' + id;
-                options = {
-                    startkey: id + '/',
-                    endkey: id + '/\uffff'
-                };
-                console.log('getPlants: allDocs', options);
-                return db.allDocs(options).then(function(pathResult) {
-                    options = {
-                        startkey: id + ':',
-                        endkey: id + ':\uffff'
-                    };
-                    console.log('getPlants: allDocs', options);
-                    return db.allDocs(options).then(function (keyResult) {
-                        return pathResult.rows.concat(keyResult.rows);
-                    });
-                }).then(function(rows) {
-                    var plantIds = [];
-                    var idMap = {};
-                    angular.forEach(rows, function(row) {
-                        var idSplit = row.key.split(':');
-                        var plantId = idSplit[2];
-                        if (self.isUnknown(row.key))
-                            plantId = idSplit.join(':');
-                        if (! idMap[plantId]) {
-                            // Remove duplicates
-                            idMap[plantId] = true;
-                            plantIds.push(plantId);
-                        }
-                    });
-                    // Fetch docs for plant ids
-                    return db.allDocs({keys:plantIds, include_docs:true}).then(function(result) {
-                        console.log('getPlants: result', result);
-                        return getDocs(result.rows);
-                    })
                 });
             },
             /**
@@ -246,6 +116,149 @@
                 });
             }
         };
+
+        /**
+         * Function decorator that memoizes data in _local docs based on update_seq
+         * @param cacheId doc id (without '_local/')
+         * @param dataFunc function returning a promise to data to be memoized
+         * @returns {function} Memoized version of function
+         */
+        function localDocMemoize(cacheId, dataFunc) {
+            cacheId = '_local/' + cacheId;
+            return function() {
+                var args = arguments;
+                // Look for cache
+                return db.get(cacheId).catch(function (err) {
+                    if (err.status !== 404)
+                        throw err;
+                    return {_id: cacheId, update_seq: 0};
+                }).then(function (cache) {
+                    return db.info().then(function (info) {
+                        if (cache.update_seq === info.update_seq) {
+                            console.log('Using memoized data from ' + cacheId);
+                            return cache.data;
+                        }
+                        // No cache or old cache: rebuild
+                        return dataFunc(args).then(function (data) {
+                            // Update cache
+                            return db.upsert(cacheId, function(doc) {
+                                doc.data = data;
+                                doc.update_seq = info.update_seq;
+                                return doc;
+                            }).then(function () {
+                                console.log('data cached', data);
+                                return data;
+                            });
+                        });
+                    });
+                }).catch(console.log.bind(console));
+            }
+        }
+
+        function buildLists() {
+            console.log('buildLists start', new Date());
+
+            var lists = [];
+            var listMap = {};
+            /**
+             * Return an Array of lists
+             * @param rows Array of rows from allDocs()
+             * @param parseId function taking a docId and returning an object { list: '', plant: '' }
+             * @return {Array} lists
+             */
+            function addListItems(rows, parseId) {
+                function addPlant(id) {
+                    var item = parseId(id);
+                    var list = getList(item.list);
+                    // Add plant to this list and parents
+                    while (list) {
+                        if (! list.plantsMap[item.plant]) {
+                            list.plantsMap[item.plant] = true;
+                            list.plants.push(item.plant);
+                            ++list.count;
+                        }
+                        list = list.parent;
+                    }
+                }
+                // Get or create a list object
+                function getList(listId) {
+                    if (listMap[listId])
+                        return listMap[listId];
+                    // Split the last part of the path off
+                    var pathSplit = listId.match(/(.*)\/([^\/]*)$/);
+                    var list = {
+                        id: listId,
+                        name: pathSplit ? pathSplit[2] : listId,
+                        parent: pathSplit ? pathSplit[1] : null,
+                        children: [],
+                        plants: [],
+                        plantsMap: {},
+                        count: 0
+                    };
+                    listMap[list.id] = list;
+                    // Create hierarchy
+                    if (list.parent) {
+                        // Get or create parent
+                        var parent = getList(list.parent);
+                        list.parent = parent;
+                        parent.children.push(list);
+                    }
+                    // Add to the main Array of lists
+                    if (! list.parent)
+                        lists.push(list);
+                    return list;
+                }
+                angular.forEach(rows, function(row) { addPlant(row.key) });
+            }
+
+            // All plants
+            return db.allDocs({startkey:'A', endkey:'ZZZZ'}).then(function(result) {
+                console.log('buildLists ALL_PLANTS start', new Date());
+                lists.push({
+                    id: self.ALL_PLANTS,
+                    name: self.ALL_PLANTS,
+                    parent: null,
+                    children: [], // Don't need children for special ALL_PLANTS
+                    count: result.rows.length
+                });
+                console.log('buildLists ALL_PLANTS end', new Date());
+            }).then(function() {
+                // List documents
+                db.allDocs({startkey: 'list-plant:', endkey: 'list-plant:\uffff'}).then(function (result) {
+                    console.log('getLists list-plants start', new Date());
+                    addListItems(result.rows, function (id) {
+                        var data = id.split(':');
+                        return {
+                            list: data[1],
+                            plant: data[2]
+                        };
+                    });
+                    console.log('getLists list-plants done', new Date());
+                });
+            }).then(function() {
+                // Unknowns
+                db.allDocs({startkey: 'unk:', endkey: 'unk:\uffff'}).then(function (result) {
+                    console.log('getLists unknowns start', new Date());
+                    addListItems(result.rows, function (id) {
+                        var data = id.split(':');
+                        return {
+                            list: ['Unknowns', data[1], data[2]].join(' '), // Unknowns YEAR SITE
+                            plant: id
+                        };
+                    });
+                    console.log('getLists unknowns done', new Date());
+                });
+            }).then(function() {
+                // Compact lists and remove recursive objects (for JSON)
+                function compact(list) {
+                    delete list.parent;
+                    delete list.listMap;
+                    angular.forEach(list.children, compact);
+                }
+                angular.forEach(lists, compact);
+                return {lists:lists, map:listMap};
+            });
+        }
 
         self.sync();
 
