@@ -1,5 +1,18 @@
 module.exports = function(grunt) {
 
+    grunt.task.registerMultiTask('couchJson', 'Compile a couch bootstrapped module as a single json', function() {
+        var options = this.options();
+        var json = {
+            _id: options.id || this.target
+        };
+        this.filesSrc.forEach(function(filename) {
+            var ext = filename.substr(filename.lastIndexOf('.') + 1);
+            json[ext] = json[ext] || [];
+            json[ext].push(grunt.file.read(filename));
+        });
+        grunt.file.write(this.data.dest, JSON.stringify(json));
+    });
+
     // Project configuration.
     grunt.initConfig({
         'string-replace': {
@@ -19,6 +32,20 @@ module.exports = function(grunt) {
                     }, {
                         pattern:/\.min\.min\.js"/gi,
                         replacement: '.min.js"'
+                    }]
+                }
+            },
+            PlantsCouchApp: {
+                src: 'index_nocache.html',
+                dest: 'couchjson/body.html',
+                options: {
+                    // Only save code between the body tags
+                    replacements: [{
+                        pattern: /[^]*<body[^>]*>[^\S]*/,
+                        replacement: ''
+                    }, {
+                        pattern: /[^\S]*<\/body[^]*/,
+                        replacement: ''
                     }]
                 }
             }
@@ -62,6 +89,39 @@ module.exports = function(grunt) {
                     'assets/js/app.min.js': ['app/**/*.js']
                 }
             }
+        },
+        // Compile dependencies into json files
+        'couchJson': {
+            'ionic': {
+                dest: 'couchjson/ionic.json',
+                src: [
+                    'assets/libs/ionic/js/ionic.bundle.min.js',
+                    'assets/libs/ionic/css/ionic.min.css'
+                ]
+            },
+            'pouchdb': {
+                dest: 'couchjson/pouchdb.json',
+                src: [
+                    'assets/libs/pouchdb/angular-pouchdb.js',
+                    'assets/libs/pouchdb/pouchdb.authentication.min.js'
+                ]
+            },
+            'PlantsApp': {
+                dest: 'couchjson/PlantsApp.json',
+                src: [
+                    'assets/js/app.min.js',
+                    'assets/css/index.css',
+                    'couchjson/body.html'
+                ]
+            }
+        },
+        // Compile entire app into a single couchapp json file
+        'couch-compile': {
+            app: {
+                files: {
+                    'couchapp.json': ['couchapp-bootstrap', 'couchjson/*.json']
+                }
+            }
         }
     });
 
@@ -69,7 +129,8 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-angular-templates');
+    grunt.loadNpmTasks('grunt-couch');
 
     // Default task(s).
-    grunt.registerTask('default', ['string-replace', 'ngtemplates', 'uglify']);
+    grunt.registerTask('default', ['string-replace', 'ngtemplates', 'uglify', 'couchJson']);
 };
