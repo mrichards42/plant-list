@@ -4,4 +4,13 @@ angular.module('PlantsApp', ['ionic', 'ui.router', 'pouchdb'])
             restrict: 'E',
             templateUrl: 'app/menus/main.html'
         }
+    })
+    .directive('plGallery', function() {
+        return {
+            restrict: 'E',
+            scope: {
+                images: '=images'
+            },
+            templateUrl: 'app/components/photo/scroller.html'
+        }
     });

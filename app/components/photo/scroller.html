@@ -1,0 +1,7 @@
+<ion-scroll direction="x" style="white-space:nowrap;" has-bouncing="true" ng-controller="ScrollerCtrl">
+    <img ng-repeat="image in images track by $index"
+         ng-src="{{image}}"
+         class="padding"
+         style="max-height:100px;"
+         ng-click="showImage($index)">
+</ion-scroll>
