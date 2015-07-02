@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plant List</title>
+
+    <link rel="shortcut icon" type="image/png" href="../../favicon.png">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+
+    <!-- Android Web App -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="../../manifest.json">
+
+    <!-- iOS Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="../../icon192.png">
+
+    <!-- Pouch -->
+    <script src="../../assets/libs/pouchdb/pouchdb-3.5.0.min.js"></script>
+
+    <script src="loader.js"></script>
+    <script>
+        /**
+         * Returns a remote database name that hosts the CouchApp
+         *
+         * Result is stored in localStorage
+         *
+         * Locations searched:
+         * (1) db search param
+         * (2) localStorage
+         * (3) host
+         */
+        function getRemote() {
+            var remote = (location.search.match(/\?db=(.*)/) || [])[1] ||
+                          localStorage.getItem('bootstrap-remote-db') ||
+                          (location.protocol + '//' + location.host + '/app');
+            localStorage.setItem('bootstrap-remote-db', remote);
+            console.log('getRemote', remote);
+            return remote;
+        }
+        // Replicate app code
+        var db = new PouchDB('app');
+        var remote = new PouchDB(getRemote());
+        db.replicate.from(remote).catch(function(err) {
+            if (err.status !== 500)
+                console.log(err);
+            // Assume we're offline and continue as if replication completed
+        }).then(function() {
+            // Load app
+            // Application js structure
+            return db.get('app-info');
+        }).then(function(app) {
+            console.log(app);
+        });
+
+        /*
+        console.log(new Date());
+        db.allDocs({include_docs:true}).then(function(allDocs) {
+            var body; // executed after all scripts
+            var js; // app js bundle
+            var app;
+            var promises = [];
+            allDocs.rows.map(function(row) {
+                var doc = row.doc;
+                if (doc._id === 'body')
+                    body = doc.data;
+                else if (doc._id === 'ng-app')
+                    app = doc.data;
+                else if (doc._id === 'appjs')
+                    js = doc.data;
+                else if (doc.type === 'css') {
+                    promises.push(function () {
+                        return loadCSS(doc.src, doc.data);
+                    });
+                }
+                else if (doc.type === 'script') {
+                    if (doc.src && typeof doc.src === 'object') {
+                        doc.src.map(function(src) {
+                            promises.push(function () {
+                                return loadScript(src);
+                            });
+                        });
+                    }
+                    else
+                        promises.push(function() {
+                            return loadScript(doc.src, doc.data);
+                        });
+                }
+                console.log(doc);
+            });
+            if (body)
+                document.body.innerHTML = body;
+            var result = Promise.resolve();
+            promises.forEach(function (factory) {
+                result = result.then(factory);
+            });
+            result.then(function() {
+                loadScript(null, js).then(function () {
+                    angular.bootstrap(document, [app]);
+                });
+                console.log(new Date());
+            });
+        });
+        */
+    </script>
+</head>
+<body>
+</body>
+</html>
