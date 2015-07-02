@@ -13,7 +13,9 @@
             }
             else
                 $scope.plant = plant;
+            $scope.photos = [];
             // Look for photos
+            /*
             flickr.query(plant.scientific, function (data) {
                 console.log('photo queried', data);
                 var photos = flickr.getPhotos(data);
@@ -23,6 +25,7 @@
                     $scope.caption = photos[0].title;
                 }
             });
+            */
         });
     }
 })();
