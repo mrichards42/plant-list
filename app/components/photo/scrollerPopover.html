@@ -1,5 +1,5 @@
 <ion-modal-view class="photo-gallery">
-    <ion-slide-box show-pager="false" active-slide="slide">
+    <ion-slide-box show-pager="false">
         <ion-slide ng-repeat="image in images" ng-click="hideModal()">
             <img ng-src="{{image}}" ng-click="$event.stopPropagation();">
         </ion-slide>

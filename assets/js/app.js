@@ -32,8 +32,8 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
 })();
 
 (function() {
-    angular.module("PlantsApp").controller("ScrollerCtrl", [ "$scope", "$ionicModal", ScrollerCtrl ]);
-    function ScrollerCtrl($scope, $ionicModal) {
+    angular.module("PlantsApp").controller("ScrollerCtrl", [ "$scope", "$ionicModal", "$ionicSlideBoxDelegate", ScrollerCtrl ]);
+    function ScrollerCtrl($scope, $ionicModal, $ionicSlideBoxDelegate) {
         var modal;
         var modalIsConstructed = false;
         $ionicModal.fromTemplateUrl("app/components/photo/scrollerPopover.html", {
@@ -44,9 +44,9 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
         });
         $scope.showImage = function(index) {
             if (modal) {
-                if (modalIsConstructed) $scope.slide = index;
+                if (modalIsConstructed) $ionicSlideBoxDelegate.slide(index);
                 modal.show().then(function() {
-                    $scope.slide = index;
+                    $ionicSlideBoxDelegate.slide(index);
                     modalIsConstructed = true;
                 });
             }
@@ -493,7 +493,7 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
 angular.module("PlantsApp").run([ "$templateCache", function($templateCache) {
     "use strict";
     $templateCache.put("app/components/photo/scroller.html", '<ion-scroll direction=x style=white-space:nowrap has-bouncing=true ng-controller=ScrollerCtrl><img ng-repeat="image in images track by $index" ng-src={{image}} class=padding style=max-height:100px ng-click=showImage($index)></ion-scroll>');
-    $templateCache.put("app/components/photo/scrollerPopover.html", '<ion-modal-view class=photo-gallery><ion-slide-box show-pager=false active-slide=slide><ion-slide ng-repeat="image in images" ng-click=hideModal()><img ng-src={{image}} ng-click=$event.stopPropagation();></ion-slide></ion-slide-box></ion-modal-view>');
+    $templateCache.put("app/components/photo/scrollerPopover.html", '<ion-modal-view class=photo-gallery><ion-slide-box show-pager=false><ion-slide ng-repeat="image in images" ng-click=hideModal()><img ng-src={{image}} ng-click=$event.stopPropagation();></ion-slide></ion-slide-box></ion-modal-view>');
     $templateCache.put("app/components/plant/detail.html", '<ion-view><ion-nav-title>{{ unknown.name || plant.scientific }}</ion-nav-title><ion-content><div ng-show=unknown><h2>{{ unknown.name }}</h2><div class=row><div class=col-33>Code</div><div class=col>{{ unknown.code }}{{ unknown.idCode ? \' (\' + unknown.idCode + \')\': \'\'}}</div></div><div class=row><div class=col-33>Collected</div><div class=col>{{ unknown.collectedDate }} {{ unknown.collector }}</div></div><div class=row><div class=col-33>Plot</div><div class=col>{{ unknown.plot }}</div></div><div class=row><div class=col-33>Habitat</div><div class=col>{{ unknown.habitat }}</div></div><div class=row><div class=col-33>Description</div><div class=col>{{ unknown.description }}</div></div><h3 ng-show="unknown.synonyms.length > 0">Synonyms</h3><div class=row ng-repeat="synonym in unknown.synonyms"><a class=col-25 ui-sref=detail({id:synonym._id})>{{ synonym.code }}</a><div class="col scientific">{{ synonym.name }}</div></div></div><div ng-show=plant><h2>{{ plant.scientific }}</h2><h3>{{ plant.common }}</h3><a href="http://plants.usda.gov/core/profile?symbol={{ plant.code }}">USDA</a><div class=plant-detail><div class=row><div class=col>Code</div><div class=col>{{ plant.code }}</div></div><div class=row><div class=col>Family</div><div class=col>{{ plant.family }} ({{ plant.familyCommon }})</div></div><div class=row><div class=col>Growth Form</div><div class=col>{{ plant.growth.join(\', \') }}</div></div></div><h3 ng-show="plant.synonyms.length > 0">Synonyms</h3><div class=row ng-repeat="synonym in plant.synonyms"><div class=col-25>{{ synonym.code }}</div><div class="col scientific">{{ synonym.scientific }}</div></div><div class=plant-thumb><img src="{{ thumbnail }}"><div class=thumb-caption>{{ caption }}</div></div></div><pl-gallery images=photos></pl-gallery></ion-content></ion-view>');
     $templateCache.put("app/components/plant/list.html", '<ion-view><ion-nav-title>{{ listName }}</ion-nav-title><ion-header-bar align-title=left class="bar-subheader bar-clear item-input-inset"><label class=item-input-wrapper><i class="icon ion-ios-search placeholder-icon"></i> <input type=search placeholder=Search ng-model=searchText> <button class="button ion-android-close button-dark button-clear" ng-show=searchText on-tap="searchText=\'\'"></button></label></ion-header-bar><ion-content><ion-list class=plant-list><ion-item collection-repeat="plant in plants | filter:plantFilter(searchText) | orderBy:\'scientific || code\'" ui-sref=detail({id:plant._id}) ng-class="(plant.idYear || plant.idCode) ? \'id-\' + (plant.idYear || 2015) : \'\'"><div class=col-code><div>{{ plant.code }}</div><div>{{ plant.idCode }}</div></div><div class=col-name><div ng-class="plant.scientific ? \'scientific\' : \'common\'">{{ plant.scientific || plant.name }}{{ genusSuffix(plant) }}</div><div ng-class="plant.scientific ? \'common\' : \'scientific\'">{{ plant.common || plant.idScientific }}</div></div><div class=col-growth><div ng-repeat="form in plant.growth" ng-class="\'growth-\' + form.toLowerCase().split(\'/\')[0]">{{ form == "Fern" ? "Fn" : form[0] }}</div></div></ion-item></ion-list></ion-content></ion-view>');
     $templateCache.put("app/menus/list_item.html", "<ion-item ng-click><a ng-style=\"{'padding-left':(16 * (list.depth = 1 + (list.parent.depth || 0))) +  'px'}\" ng-click=toggleChildren(list)><i class=expand-collapse ng-class=\"areChildrenShown(list) ? 'ion-arrow-down-b' : 'ion-arrow-right-b'\" ng-show=\"list.children.length > 0\"></i></a> <span ui-sref=list({id:list.id}) menu-close>{{ list.name }} ({{ list.count }})</span></ion-item><div ng-show=areChildrenShown(list)><div ng-repeat=\"list in list.children\" ng-include=\"'app/menus/list_item.html'\"></div></div>");

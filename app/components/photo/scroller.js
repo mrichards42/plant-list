@@ -1,7 +1,7 @@
 (function() {
     angular.module('PlantsApp')
-        .controller('ScrollerCtrl', ['$scope', '$ionicModal', ScrollerCtrl]);
-    function ScrollerCtrl($scope, $ionicModal) {
+        .controller('ScrollerCtrl', ['$scope', '$ionicModal', '$ionicSlideBoxDelegate', ScrollerCtrl]);
+    function ScrollerCtrl($scope, $ionicModal, $ionicSlideBoxDelegate) {
         var modal;
         var modalIsConstructed = false;
         $ionicModal.fromTemplateUrl('app/components/photo/scrollerPopover.html', {
@@ -12,12 +12,12 @@
         });
         $scope.showImage = function(index) {
             if (modal) {
-                // $scope.slide = index throws an error (later) if modal.show() has never been called
+                // slide() throws an error (later) if modal.show() has never been called
                 // Delay changing the slide until after the modal has been shown at least once
                 if (modalIsConstructed)
-                    $scope.slide = index;
+                    $ionicSlideBoxDelegate.slide(index);
                 modal.show().then(function() {
-                    $scope.slide = index;
+                    $ionicSlideBoxDelegate.slide(index);
                     modalIsConstructed = true;
                 });
             }
