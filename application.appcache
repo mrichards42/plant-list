@@ -1,25 +1,17 @@
 CACHE MANIFEST
 
-# version 0.6.7
+# version 0.7
 
 CACHE:
 # app
 index.html
-assets/js/app.min.js
-assets/css/index.css
+loader.js
 
 # data
 manifest.json
 
-# ionic
-assets/libs/ionic/css/ionic.min.css
-assets/libs/ionic/js/ionic.bundle.min.js
-assets/libs/ionic/fonts/ionicons.ttf?v=2.0.1
-
 # pouch
-assets/libs/pouchdb/pouchdb-3.5.0.min.js
-assets/libs/pouchdb/angular-pouchdb.min.js
-assets/libs/pouchdb/pouchdb.authentication.min.js
+https://cdnjs.cloudflare.com/ajax/libs/pouchdb/3.6.0/pouchdb.min.js
 
 NETWORK:
 *
