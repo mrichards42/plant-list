@@ -117,7 +117,10 @@ module.exports = function(grunt) {
                 dest: 'couchjson/pouchdb.json',
                 src: [
                     'assets/libs/pouchdb/angular-pouchdb.js',
-                    'assets/libs/pouchdb/pouchdb.authentication.min.js'
+                    'assets/libs/pouchdb/pouchdb.authentication.min.js',
+                    'assets/libs/pouchdb/pouchdb.upsert.js',
+                    'assets/libs/pouchdb/pouchdb.load.js',
+                    'crypto-js-rollups-sha1.js'
                 ]
             },
             'PlantsApp': {
