@@ -1,8 +1,7 @@
 (function() {
-
-// Replicate app then bootstrap
+var APP = getAppInfo();
 var db = new PouchDB('app');
-var remote = new PouchDB(getRemote());
+var remote = new PouchDB(APP.db);
 db.replicate.from(remote).catch(function (err) {
     if (err.status !== 500)
         console.log(err);
@@ -17,13 +16,8 @@ db.replicate.from(remote).catch(function (err) {
         return docMap;
     });
 }).then(function (docMap) {
-    // index.html is an attachment to the app doc, so we can just strip the
-    // '/index.html' off the path to get the doc name
-    // e.g. 'db/app/APP_DOC/index.html'
-    var docId = location.pathname.split('/').slice(-2)[0];
-
     // Bootstrap the main application
-    loadModule(docId);
+    loadModule(APP.doc);
 
     /**
      * Bootstrap a module
@@ -101,22 +95,23 @@ function loadFunc(parent, tag, attrs) {
 }
 
 /**
- * Return a remote database name that hosts the CouchApp
+ * Return an appinfo object: { 'db':'', 'doc':'' }
  *
- * Result is stored in localStorage
- *
- * Locations searched:
- * (1) db search param
+ * Locations searched for app_doc
+ * (1) app search param
  * (2) localStorage
- * (3) host
+ * (3) current page (db/app_doc/index.html)
  */
-function getRemote() {
-    var remote = (location.search.match(/\?db=(.*)/) || [])[1] ||
-        localStorage.getItem('bootstrap-remote-db') ||
-        (location.protocol + '//' + location.host + '/app');
-    localStorage.setItem('bootstrap-remote-db', remote);
-    console.log('getRemote', remote);
-    return remote;
+function getAppInfo() {
+    var app = (location.search.match(/\?app=(.*)/) || [])[1] ||
+        localStorage.getItem('bootstrap-app') ||
+        location.pathname.substr(0, location.pathname.lastIndexOf('/'));
+    localStorage.setItem('bootstrap-app', app);
+    var split = app.lastIndexOf('/');
+    return {
+        db:  app.substr(0, split),
+        doc: app.substr(split+1)
+    };
 }
 
 // forEach or no-op if arr is null
