@@ -133,7 +133,7 @@ function loadFunc(parent, tag, attrs) {
 function getAppInfo() {
     var app = (location.search.match(/\?app=(.*)/) || [])[1] ||
         localStorage.getItem('bootstrap-app') ||
-        location.pathname.substr(0, location.pathname.lastIndexOf('/'));
+        location.href.substr(0, location.href.lastIndexOf('/'));
     localStorage.setItem('bootstrap-app', app);
     var split = app.lastIndexOf('/');
     return {
