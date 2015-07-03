@@ -109,7 +109,8 @@ module.exports = function(grunt) {
                 dest: 'couchjson/ionic.json',
                 src: [
                     'assets/libs/ionic/js/ionic.bundle.min.js',
-                    'assets/libs/ionic/css/ionic.min.css'
+                    'assets/libs/ionic/css/ionic.min.css',
+                    'assets/libs/ionic/fonts/ionicons.ttf'
                 ]
             },
             'pouchdb': {
