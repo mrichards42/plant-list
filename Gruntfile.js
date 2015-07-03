@@ -130,6 +130,19 @@ module.exports = function(grunt) {
             }
         },
         // Compile entire app into a single couchapp json file
+        'copy': {
+            app: {
+                files: [{
+                    expand: true,
+                    dest: 'couchapp-bootstrap/_attachments/',
+                    src: [
+                        '*.png',
+                        'manifest.json',
+                        'application.appcache'
+                    ]
+                }]
+            }
+        },
         'couch-compile': {
             app: {
                 files: {
@@ -143,8 +156,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-string-replace');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-angular-templates');
+    grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-couch');
 
     // Default task(s).
-    grunt.registerTask('default', ['string-replace', 'ngtemplates', 'uglify', 'couchJson']);
+    grunt.registerTask('default', ['string-replace', 'ngtemplates', 'uglify', 'copy', 'couchJson', 'couch-compile']);
 };
