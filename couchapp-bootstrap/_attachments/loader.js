@@ -131,9 +131,10 @@ function loadFunc(parent, tag, attrs) {
  * (3) current page (db/app_doc/index.html)
  */
 function getAppInfo() {
+    var url = location.protocol + '//' + location.host + location.pathname;
     var app = (location.search.match(/\?app=(.*)/) || [])[1] ||
         localStorage.getItem('bootstrap-app') ||
-        location.href.substr(0, location.href.lastIndexOf('/'));
+        url.substr(0, url.lastIndexOf('/'));
     localStorage.setItem('bootstrap-app', app);
     var split = app.lastIndexOf('/');
     return {
