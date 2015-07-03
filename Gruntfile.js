@@ -149,6 +149,13 @@ module.exports = function(grunt) {
                     'couchapp.json': ['couchapp-bootstrap', 'couchjson/*.json']
                 }
             }
+        },
+        'couch-push': {
+            cloudant: {
+                files: {
+                    'https://<%= grunt.option("user") %>.cloudant.com/app': 'couchapp.json'
+                }
+            }
         }
     });
 
@@ -158,6 +165,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-angular-templates');
     grunt.loadNpmTasks('grunt-contrib-copy');
     grunt.loadNpmTasks('grunt-couch');
+
+    // couch-push is not a default task
+    // grunt couch-push --user=USER --pass=PASS
 
     // Default task(s).
     grunt.registerTask('default', ['string-replace', 'ngtemplates', 'uglify', 'copy', 'couchJson', 'couch-compile']);
