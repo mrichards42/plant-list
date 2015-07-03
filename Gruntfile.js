@@ -120,7 +120,7 @@ module.exports = function(grunt) {
                     'assets/libs/pouchdb/pouchdb.authentication.min.js',
                     'assets/libs/pouchdb/pouchdb.upsert.js',
                     'assets/libs/pouchdb/pouchdb.load.js',
-                    'crypto-js-rollups-sha1.js'
+                    'assets/libs/pouchdb/crypto-js-rollups-sha1.js'
                 ]
             },
             'PlantsApp': {
