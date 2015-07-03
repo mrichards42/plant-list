@@ -2,10 +2,37 @@
 var APP = getAppInfo();
 var db = new PouchDB('app');
 var remote = new PouchDB(APP.db);
-db.replicate.from(remote).catch(function (err) {
-    if (err.status !== 500)
-        console.log(err);
+var start = Date.now();
+
+// Store first access time in remote database in case it is ever recreated
+// If local number does not match, destroy the local db and replicate from scratch
+remote.get('_local/created').catch(function (err) {
+    if (err.status !== 404)
+        throw err;
+    var doc = {_id:'_local/created', created:Date.now()};
+    return remote.put(doc).then(function() { return doc });
+}).then(function(remoteDoc) {
+    return db.get('_local/created').catch(function(err) {
+        if (err.status !== 404)
+            throw err;
+        return {}; // Dummy object
+    }).then(function(localDoc) {
+        if (localDoc.created !== remoteDoc.created) {
+            // If no local doc exists or if it does not match the remote,
+            // destroy the local database and recreate it
+            return db.destroy().then(function() {
+                db = new PouchDB('app');
+                delete remoteDoc._rev;
+                return db.put(remoteDoc);
+            });
+        }
+    });
+}).then(function() {
+    // Replicate app then bootstrap
+    return db.replicate.from(remote);
+}).catch(function(err) {
     // Assume we're offline and continue as if replication completed
+    console.log('Probably offline; skipping replication', err);
 }).then(function () {
     // Map all docs by key for loadModule
     return db.allDocs({include_docs: true}).then(function (allDocs) {
@@ -18,6 +45,7 @@ db.replicate.from(remote).catch(function (err) {
 }).then(function (docMap) {
     // Bootstrap the main application
     loadModule(APP.doc);
+    console.log('Bootstrapping time: ' + (Date.now() - start)/1000);
 
     /**
      * Bootstrap a module
