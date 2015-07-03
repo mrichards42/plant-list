@@ -48,9 +48,7 @@ db.replicate.from(remote).catch(function (err) {
             loadModule(doc.app);
 
         // CSS
-        forEach(doc.css, function (style) {
-            loadCSS(style.data)
-        });
+        forEach(doc.css, loadCSS);
 
         // Fonts
         forEach(doc.ttf, function (font) {
@@ -59,14 +57,10 @@ db.replicate.from(remote).catch(function (err) {
         });
 
         // HTML
-        forEach(doc.html, function (html) {
-            loadHTML(html.data)
-        });
+        forEach(doc.html, loadHTML);
 
         // Scripts
-        forEach(doc.js, function (js) {
-            loadScript(js.data)
-        });
+        forEach(doc.js, loadScript);
     }
 });
 
