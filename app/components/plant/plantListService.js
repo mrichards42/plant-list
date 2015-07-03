@@ -131,7 +131,7 @@
                 return db.get(cacheId).catch(function (err) {
                     if (err.status !== 404)
                         throw err;
-                    return {_id: cacheId, update_seq: 0};
+                    return {_id: cacheId, update_seq: -1};
                 }).then(function (cache) {
                     return db.info().then(function (info) {
                         if (cache.update_seq === info.update_seq) {
@@ -224,7 +224,7 @@
                 console.log('buildLists ALL_PLANTS end', new Date());
             }).then(function() {
                 // List documents
-                db.allDocs({startkey: 'list-plant:', endkey: 'list-plant:\uffff'}).then(function (result) {
+                return db.allDocs({startkey: 'list-plant:', endkey: 'list-plant:\uffff'}).then(function (result) {
                     console.log('getLists list-plants start', new Date());
                     addListItems(result.rows, function (id) {
                         var data = id.split(':');
@@ -237,7 +237,7 @@
                 });
             }).then(function() {
                 // Unknowns
-                db.allDocs({startkey: 'unk:', endkey: 'unk:\uffff'}).then(function (result) {
+                return db.allDocs({startkey: 'unk:', endkey: 'unk:\uffff'}).then(function (result) {
                     console.log('getLists unknowns start', new Date());
                     addListItems(result.rows, function (id) {
                         var data = id.split(':');

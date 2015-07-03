@@ -145,9 +145,8 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
         var listId = $stateParams.id || plantList.ALL_PLANTS;
         $scope.listName = plantList.getListName(listId);
         plantList.getPlants(listId).then(function(list) {
-            console.log("$scope.plants", list);
+            console.log(list);
             $scope.plants = list;
-            console.log("$scope.plants done");
         });
     }
 })();
@@ -271,7 +270,7 @@ angular.module("PlantsApp", [ "ionic", "ui.router", "pouchdb" ]).directive("plan
                     if (err.status !== 404) throw err;
                     return {
                         _id: cacheId,
-                        update_seq: 0
+                        update_seq: -1
                     };
                 }).then(function(cache) {
                     return db.info().then(function(info) {
