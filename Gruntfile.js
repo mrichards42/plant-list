@@ -1,14 +1,27 @@
 module.exports = function(grunt) {
 
+    // Extensions that are better as base64 (or they would contain many \uXXXX sequences)
+    var BINARY = {
+        'ttf': true
+    };
     grunt.task.registerMultiTask('couchJson', 'Compile a couch bootstrapped module as a single json', function() {
         var options = this.options();
         var json = {
             _id: options.id || this.target
         };
         this.filesSrc.forEach(function(filename) {
-            var ext = filename.substr(filename.lastIndexOf('.') + 1);
+            var ext = filename.substr(filename.lastIndexOf('.') + 1).toLowerCase();
             json[ext] = json[ext] || [];
-            json[ext].push(grunt.file.read(filename));
+            if (! BINARY[ext]) {
+                // Plain text is pushed as-is
+                json[ext].push(grunt.file.read(filename));
+            }
+            else {
+                // Binary data is base64-encoded and stored as a {name, data} object
+                var data = grunt.file.read(filename, {encoding: null}).toString('base64');
+                var name = filename.substring(filename.lastIndexOf('/') + 1, filename.lastIndexOf('.'));
+                json[ext].push({name: name, data: data});
+            }
         });
         grunt.file.write(this.data.dest, JSON.stringify(json));
     });
