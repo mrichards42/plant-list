@@ -1,0 +1,30 @@
+<ion-view view-title="Config">
+    <ion-content>
+        <div ng-hide="config.isLoggedIn">
+            <form name="loginForm" ng-submit="login()">
+                <div class="list">
+                    <label class="item item-input">
+                        <input type="text" ng-model="config.username" placeholder="Username" required>
+                    </label>
+                    <label class="item item-input">
+                        <input type="password" ng-model="config.password" placeholder="Password" required>
+                    </label>
+                        <ion-checkbox class="item item-input" ng-model="config.saveUsername">Save Username</ion-checkbox>
+                </div>
+            </form>
+        </div>
+        <div>
+            <div ng-show="config.isLoggedIn" class="padding">
+                Signed in as <strong>{{ config.username }}</strong>
+                <button class="button button-block button-positive" ng-click="logout()">
+                    Sign Out
+                </button>
+            </div>
+            <div ng-hide="config.isLoggedIn" class="padding">
+                <button class="button button-block button-positive" ng-click="login()" ng-disabled="loginForm.$invalid">
+                    Sign In
+                </button>
+            </div>
+        </div>
+    </ion-content>
+</ion-view>

@@ -1,12 +1,8 @@
 (function() {
     angular.module('PlantsApp')
-        .controller('PlantListCtrl', ['$scope', '$stateParams', '$ionicLoading', 'plantList', PlantListCtrl]);
+        .controller('PlantListCtrl', ['$scope', '$stateParams', 'plantList', PlantListCtrl]);
 
-    function PlantListCtrl($scope, $stateParams, $ionicLoading, plantList) {
-        if (plantList.isLoading())
-            $ionicLoading.show({
-                template: 'Initializing Plant List...'
-            });
+    function PlantListCtrl($scope, $stateParams, plantList) {
         $scope.genusSuffix = function(plant) {
             if (plant.code.lastIndexOf("SPP") == plant.code.length - 3)
                 return " spp. (lump)";
@@ -43,7 +39,6 @@
         plantList.getPlants(listId).then(function (list) {
             console.log(list);
             $scope.plants = list;
-            $ionicLoading.hide();
         });
     }
 })();

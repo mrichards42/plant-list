@@ -6,6 +6,12 @@
             $urlRouterProvider.when('/', '/list');
             $urlRouterProvider.when('/list', '/list/');
 
+            $stateProvider.state('config', {
+                url: '/config',
+                controller: 'ConfigCtrl',
+                templateUrl: 'app/components/config/config.html'
+            });
+
             $stateProvider.state('list', {
                 url: '/list/{id}',
                 controller: 'PlantListCtrl',

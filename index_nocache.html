@@ -23,7 +23,10 @@
     <!-- PouchDB -->
     <script src="assets/libs/pouchdb/pouchdb-3.5.0.min.js"></script>
     <script src="assets/libs/pouchdb/angular-pouchdb.js"></script>
+    <script src="assets/libs/pouchdb/pouchdb.upsert.js"></script>
     <script src="assets/libs/pouchdb/pouchdb.authentication.js"></script>
+    <script src="assets/libs/pouchdb/pouchdb.load.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/sha1.js"></script>
 
     <!-- App -->
     <link href="assets/css/index.css" rel="stylesheet">
@@ -39,6 +42,10 @@
                 <button menu-toggle="left" class="button button-icon icon ion-navicon"></button>
             </ion-nav-buttons>
             <ion-nav-back-button></ion-nav-back-button>
+            <ion-nav-buttons side="right" ng-hide="">
+                <sync-button></sync-button>
+                <button ui-sref="config" class="button button-icon icon ion-gear-a"></button>
+            </ion-nav-buttons>
         </ion-nav-bar>
 
         <!-- where the initial view template will be rendered -->
