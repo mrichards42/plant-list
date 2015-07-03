@@ -144,18 +144,16 @@ module.exports = function(grunt) {
             }
         },
         'couch-compile': {
-            app: {
-                files: {
-                    'couchapp.json': ['couchapp-bootstrap', 'couchjson/*.json']
-                }
-            }
+            bootstrap:  { files: { 'couchapp-bootstrap.json': 'couchapp-bootstrap'} },
+            ionic:      { files: { 'couchapp-ionic.json': 'couchjson/ionic.json'} },
+            pouchdb:    { files: { 'couchapp-pouchdb.json': 'couchjson/pouchdb.json'} },
+            app:        { files: { 'couchapp.json': 'couchjson/PlantsApp.json'} }
         },
         'couch-push': {
-            cloudant: {
-                files: {
-                    'https://<%= grunt.option("user") %>.cloudant.com/app': 'couchapp.json'
-                }
-            }
+            bootstrap:  { files: { 'https://<%= grunt.option("user") %>.cloudant.com/app': 'couchapp-bootstrap.json' } },
+            ionic:      { files: { 'https://<%= grunt.option("user") %>.cloudant.com/app': 'couchapp-ionic.json' } },
+            pouchdb:    { files: { 'https://<%= grunt.option("user") %>.cloudant.com/app': 'couchapp-pouchdb.json' } },
+            app:        { files: { 'https://<%= grunt.option("user") %>.cloudant.com/app': 'couchapp.json' } }
         }
     });
 
