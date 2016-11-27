@@ -27,3 +27,12 @@ Tap on a plant to view defaults (this screen is not polished).
 Identified plants include additional details such as family, synonyms,
 and a link to the USDA plants page.  Unknown plants include collection
 details.
+
+## Offline Mode
+
+Data is automatically saved locally, so after the initial render
+offline use works transparently.  Data is saved to either indexeddb,
+websql, or localstorage (PouchDB decides).
+
+_Note: iphones limit the amount of data that can be stored locally,
+so you may be prompted to increase the storage allotment for this._
